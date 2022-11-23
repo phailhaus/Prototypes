@@ -23,6 +23,16 @@ HONEY = 4
 simarray = [[{} for i in range(simwidth)] for j in range(simheight)] # Create sim array
 
 fluidconfig = {
+	AIR: {
+		"lifespan": 0,
+		"flow": 0,
+		"color": (200, 220, 255)
+	},
+	GROUND: {
+		"lifespan": 0,
+		"flow": 0,
+		"color": (64, 128, 32)
+	},
 	WATER: {
 		"lifespan": 6,
 		"flow": .5,
@@ -30,7 +40,7 @@ fluidconfig = {
 	},
 	BLOOD: {
 		"lifespan": 6,
-		"flow": .4,
+		"flow": .5,
 		"color": (180, 30, 30)
 	},
 	HONEY: {
@@ -41,45 +51,53 @@ fluidconfig = {
 }
 
 inputs = list()
-inputs.append({"type": BLOOD, "on": True, "totalvolume": 400, "remainingvolume": 400})
-inputs.append({"type": WATER, "on": True, "totalvolume": 600, "remainingvolume": 600})
+inputs.append({"type": WATER, "on": True, "totalvolume": 400, "remainingvolume": 400})
+inputs.append({"type": BLOOD, "on": True, "totalvolume": 600, "remainingvolume": 600})
 inputs.append({"type": HONEY, "on": True, "totalvolume": 600, "remainingvolume": 600})
 
 # Initialize world
+aircell = {
+	"blocktype": AIR,
+	"blocktypenew": AIR,
+	"fluidmass": 0,
+	"fluidmassnew": 0,
+	"flowx": 0,
+	"flowy": 0,
+	"flowxnew": 0,
+	"flowynew": 0,
+	"lifespan": 0,
+	"input": None
+}
+groundcell = {
+	"blocktype": GROUND,
+	"blocktypenew": GROUND,
+	"fluidmass": 1,
+	"fluidmassnew": 1,
+	"flowx": 0,
+	"flowy": 0,
+	"flowxnew": 0,
+	"flowynew": 0,
+	"lifespan": 0,
+	"input": None
+}
+
 for simcol in range(simwidth):
 	for simrow in range(simheight):
-		simcell = simarray[simrow][simcol]
-		simcell["blocktype"] = AIR
-		simcell["blocktypenew"] = AIR
-		simcell["fluidmass"] = 0
-		simcell["fluidmassnew"] = 0
-		simcell["flowx"] = 0
-		simcell["flowy"] = 0
-		simcell["flowxnew"] = 0
-		simcell["flowynew"] = 0
-		simcell["lifespan"] = 0
-		simcell["input"] = None
+		simcell = dict(aircell)
 		if simrow == 0 or simrow == simheight - 1: # Create floor/ceiling
-			simcell["blocktype"] = GROUND
-			simcell["blocktypenew"] = GROUND
+			simcell = dict(groundcell)
 		elif simcol == 0 or simcol == simwidth - 1: # Create walls
-			simcell["blocktype"] = GROUND
-			simcell["blocktypenew"] = GROUND
+			simcell = dict(groundcell)
 		elif simrow == 5 and (simcol != 3 and simcol < 7):
-			simcell["blocktype"] = GROUND
-			simcell["blocktypenew"] = GROUND
+			simcell = dict(groundcell)
 		elif simrow <= 4 and simcol == 7:
-			simcell["blocktype"] = GROUND
-			simcell["blocktypenew"] = GROUND
+			simcell = dict(groundcell)
 		elif simrow == 10 and simcol >= 12:
-			simcell["blocktype"] = GROUND
-			simcell["blocktypenew"] = GROUND
+			simcell = dict(groundcell)
 		elif (simrow == 9 or simrow == 7 or simrow <= 6) and simcol == 12:
-			simcell["blocktype"] = GROUND
-			simcell["blocktypenew"] = GROUND
+			simcell = dict(groundcell)
 		elif 18 < simrow < 24 and simcol == 20:
-			simcell["blocktype"] = GROUND
-			simcell["blocktypenew"] = GROUND
+			simcell = dict(groundcell)
 		elif (simcol == 18) and (simrow == 3):
 			simcell["input"] = 1
 		elif (simcol == 4) and simrow == 3:
@@ -164,7 +182,7 @@ def simcore(simarray):
 				inputs[simcell["input"]]["remainingvolume"] -= maxmass
 				
 
-			if simcell["fluidmass"] >= maxmass and inputs[simcell["input"]]["on"] and simcell["lifespan"] <= fluidconfig[simcell["blocktype"]]["lifespan"] : # Only perform sim if cell is a fluid and not dead
+			if simcell["blocktype"] > GROUND and simcell["fluidmass"] >= maxmass and inputs[simcell["input"]]["on"] and simcell["lifespan"] <= fluidconfig[simcell["blocktype"]]["lifespan"] : # Only perform sim if cell is a fluid and not dead
 				simarray = simlogic(simrow, simcol, simarray)
 				simcell["lifespan"] += 1 * timescale
 				
@@ -183,24 +201,17 @@ def simdraw(simarray, simscale): # iterates through a given 2D array, drawing th
 	simwidth = len(simarray[0])
 	simheight = len(simarray)	
 	simsurface = pygame.Surface((simwidth * simscale, simheight * simscale))
-	simsurface.fill(aircolor)
+	simsurface.fill(fluidconfig[AIR]["color"])
 	simrow = 0
 	simcol = 0
 	for simrowarray in simarray:
 		for simcelldata in simrowarray:
-						
-			if simcelldata["blocktype"] == GROUND: 
-				cellcolor = groundcolor
-				cellsurface = pygame.Surface((simscale, simscale))
-				simrect = pygame.Rect(simcol * simscale, simrow * simscale, simscale, simscale)
+			cellcolor = fluidconfig[simcelldata["blocktype"]]["color"]
+			cellsize = int(simcelldata["fluidmass"] / maxmass * simscale)
 			
-			if simcelldata["blocktype"] > GROUND:
-				cellcolor = fluidconfig[simcelldata["blocktype"]]["color"]
-				cellsize = int(simcelldata["fluidmass"]*simscale)
-				
-				cellsurface = pygame.Surface((simscale, cellsize))
-				simrect = pygame.Rect(simcol * simscale, (simrow + 1) * simscale - cellsize, simscale, simscale * cellsize)
-				cellsurface.set_alpha(int(pygame.math.clamp(simcelldata["fluidmass"] / maxmass * 255, 0, 255)))
+			cellsurface = pygame.Surface((simscale, cellsize))
+			simrect = pygame.Rect(simcol * simscale, (simrow + 1) * simscale - cellsize, simscale, simscale * cellsize)
+			cellsurface.set_alpha(int(pygame.math.clamp(simcelldata["fluidmass"] / maxmass * 255, 0, 255)))
 			cellsurface.fill(cellcolor)
 			pygame.Surface.blit(simsurface, cellsurface, simrect)
 			simcol += 1
