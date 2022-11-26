@@ -61,10 +61,7 @@ aircell = {
 	"blocktypenew": AIR,
 	"fluidmass": 0,
 	"fluidmassnew": 0,
-	"flowx": 0,
-	"flowy": 0,
-	"flowxnew": 0,
-	"flowynew": 0,
+	"fluidmassdict": None,
 	"lifespan": 0,
 	"input": None
 }
@@ -73,10 +70,11 @@ groundcell = {
 	"blocktypenew": GROUND,
 	"fluidmass": 1,
 	"fluidmassnew": 1,
-	"flowx": 0,
-	"flowy": 0,
-	"flowxnew": 0,
-	"flowynew": 0,
+	"fluidmassdict": {GROUND: {
+		"fluidmass": 1,
+		"fluidmassnew": 1,
+		"input": None
+	}},
 	"lifespan": 0,
 	"input": None
 }
@@ -102,7 +100,7 @@ for simcol in range(simwidth):
 			simcell["input"] = 1
 		elif (simcol == 4) and simrow == 3:
 			simcell["input"] = 0
-		elif (simcol == 18) and (simrow == 11 or simrow == 16):
+		elif (simcol == 14) and (simrow == 11 or simrow == 16):
 			simcell["input"] = 2
 		simarray[simrow][simcol] = simcell
 
@@ -125,34 +123,50 @@ def flowcalc(materialmaxflow, remainingvolume, targetmass, cellsneedingmass):
 def simlogic(coordrow, coordcol, simarray):
 	thiscell = simarray[coordrow][coordcol]
 	targetcelltuple = (simarray[coordrow - 1][coordcol], simarray[coordrow][coordcol + 1], simarray[coordrow + 1][coordcol], simarray[coordrow][coordcol - 1]) # 0: U. 1: R. 2: D. 3: L
-	massneededtofill = 0
-	fluidmasslist = list()
-	cellsneedingmass = 0
-	materialmaxflow = fluidconfig[thiscell["blocktype"]]["flow"] * timescale
-	for targetcell in targetcelltuple:
-		if targetcell["blocktypenew"] == AIR or targetcell["blocktypenew"] == thiscell["blocktype"]:
-			if maxmass - targetcell["fluidmassnew"] >= materialmaxflow:
-				massneededtofill += materialmaxflow
-			else:
-				massneededtofill += maxmass - targetcell["fluidmassnew"]
-			fluidmasslist.append(targetcell["fluidmassnew"])
-			cellsneedingmass += 1
-		else:
-			fluidmasslist.append(maxmass)
-	massinput = inputs[thiscell["input"]]
-	flowlist = list()
-	if massneededtofill > 0 and massinput["remainingvolume"] > 0:
-		for cellid in range(len(fluidmasslist)):
-			if fluidmasslist[cellid] < maxmass:
-				flowlist.append(flowcalc(materialmaxflow, massinput["remainingvolume"], fluidmasslist[cellid], cellsneedingmass))
-			else: flowlist.append(0)
-	for cellid in range(len(flowlist)):
-		if flowlist[cellid] > 0:
-			targetcelltuple[cellid]["fluidmassnew"] = targetcelltuple[cellid]["fluidmassnew"] + flowlist[cellid]
-			targetcelltuple[cellid]["blocktypenew"] = thiscell["blocktype"]
-			targetcelltuple[cellid]["input"] = thiscell["input"]
-			inputs[thiscell["input"]]["remainingvolume"] -= flowlist[cellid]
-
+	
+	if thiscell["fluidmassdict"] != None:
+		for flowingmaterial, flowingmaterialdata in sorted(thiscell["fluidmassdict"].items(), key=lambda elem: elem[1]["fluidmass"], reverse=True): # Iterates through the target dict in decending order sorted by the listed subkey.
+			massneededtofill = 0
+			fluidmasslist = list()
+			cellsneedingmass = 0
+			materialmaxflow = pygame.math.clamp((flowingmaterialdata["fluidmass"] / maxmass), 0, 1) * fluidconfig[flowingmaterial]["flow"] * timescale
+			for targetcell in targetcelltuple:
+				if targetcell["blocktype"] != GROUND:
+					if maxmass - targetcell["fluidmassnew"] >= materialmaxflow:
+						massneededtofill += materialmaxflow
+					else:
+						massneededtofill += maxmass - targetcell["fluidmassnew"]
+					fluidmasslist.append(targetcell["fluidmassnew"])
+					cellsneedingmass += 1
+				else:
+					fluidmasslist.append(maxmass)
+			massinput = inputs[flowingmaterialdata["input"]]
+			flowlist = list()
+			if massneededtofill > 0 and massinput["remainingvolume"] > 0:
+				for cellid in range(len(fluidmasslist)):
+					if fluidmasslist[cellid] < maxmass:
+						flowlist.append(flowcalc(materialmaxflow, massinput["remainingvolume"], fluidmasslist[cellid], cellsneedingmass))
+					else: flowlist.append(0)
+			for cellid in range(len(flowlist)):
+				if flowlist[cellid] > 0:
+					targetcelltuple[cellid]["fluidmassnew"] = targetcelltuple[cellid]["fluidmassnew"] + flowlist[cellid]
+					targetcelltuple[cellid]["blocktypenew"] = thiscell["blocktype"]
+					targetcelltuple[cellid]["input"] = flowingmaterialdata["input"]
+					inputs[flowingmaterialdata["input"]]["remainingvolume"] -= flowlist[cellid]
+					if targetcelltuple[cellid]["fluidmassdict"] == None:
+						targetcelltuple[cellid]["fluidmassdict"] = {flowingmaterial: {
+							"fluidmass": 0,
+							"fluidmassnew": flowlist[cellid],
+							"input": flowingmaterialdata["input"]
+						}}
+					elif flowingmaterial in targetcelltuple[cellid]["fluidmassdict"]:
+						targetcelltuple[cellid]["fluidmassdict"][flowingmaterial]["fluidmassnew"] += flowlist[cellid]
+					else:
+						targetcelltuple[cellid]["fluidmassdict"][flowingmaterial] = {
+							"fluidmass": 0,
+							"fluidmassnew": flowlist[cellid],
+							"input": flowingmaterialdata["input"]
+						}
 		
 	simarray[coordrow - 1][coordcol] = targetcelltuple[0]
 	simarray[coordrow][coordcol + 1] = targetcelltuple[1]
@@ -177,6 +191,13 @@ def simcore(simarray):
 			if simcell["input"] != None and simcell["blocktypenew"] == AIR and inputs[simcell["input"]]["on"] and inputs[simcell["input"]]["remainingvolume"] >= maxmass:
 				simcell["fluidmass"] = maxmass
 				simcell["fluidmassnew"] = maxmass
+				simcell["fluidmassdict"] = {
+					inputs[simcell["input"]]["type"]: {
+						"fluidmass": maxmass,
+						"fluidmassnew": maxmass,
+						"input": simcell["input"]
+					}
+				}
 				simcell["blocktype"] = inputs[simcell["input"]]["type"]
 				simcell["blocktypenew"] = inputs[simcell["input"]]["type"]
 				inputs[simcell["input"]]["remainingvolume"] -= maxmass
@@ -185,11 +206,14 @@ def simcore(simarray):
 			if simcell["blocktype"] > GROUND and simcell["fluidmass"] >= maxmass and inputs[simcell["input"]]["on"] and simcell["lifespan"] <= fluidconfig[simcell["blocktype"]]["lifespan"] : # Only perform sim if cell is a fluid and not dead
 				simarray = simlogic(simrow, simcol, simarray)
 				simcell["lifespan"] += 1 * timescale
-				
+	
 	for simrow in range(simheight):
 		for simcol in range(simwidth):
 			simarray[simrow][simcol]["blocktype"] = simarray[simrow][simcol]["blocktypenew"]
 			simarray[simrow][simcol]["fluidmass"] = simarray[simrow][simcol]["fluidmassnew"]
+			if simarray[simrow][simcol]["fluidmassdict"] != None:
+				for fluidtype, fluidtypedata in simarray[simrow][simcol]["fluidmassdict"].items():
+					simarray[simrow][simcol]["fluidmassdict"][fluidtype]["fluidmass"] = simarray[simrow][simcol]["fluidmassdict"][fluidtype]["fluidmassnew"]
 	for inputid in range(len(inputs)-1):
 		if inputs[inputid]["remainingvolume"] == 0:
 			inputs[inputid]["on"] == False
@@ -206,14 +230,18 @@ def simdraw(simarray, simscale): # iterates through a given 2D array, drawing th
 	simcol = 0
 	for simrowarray in simarray:
 		for simcelldata in simrowarray:
-			cellcolor = fluidconfig[simcelldata["blocktype"]]["color"]
-			cellsize = int(simcelldata["fluidmass"] / maxmass * simscale)
-			
-			cellsurface = pygame.Surface((simscale, cellsize))
-			simrect = pygame.Rect(simcol * simscale, (simrow + 1) * simscale - cellsize, simscale, simscale * cellsize)
-			cellsurface.set_alpha(int(pygame.math.clamp(simcelldata["fluidmass"] / maxmass * 255, 0, 255)))
-			cellsurface.fill(cellcolor)
-			pygame.Surface.blit(simsurface, cellsurface, simrect)
+			if simcelldata["fluidmassdict"] != None:
+				cumulativesize = 0
+				for flowingmaterial, flowingmaterialdata in sorted(simcelldata["fluidmassdict"].items(), key=lambda elem: elem[1]["fluidmass"], reverse=True): # Iterates through the target dict in decending order sorted by the listed subkey.
+					cellcolor = fluidconfig[flowingmaterial]["color"]
+					cellsize = int(flowingmaterialdata["fluidmass"] / maxmass * simscale)
+					cumulativesize += cellsize
+					
+					cellsurface = pygame.Surface((simscale, cellsize))
+					simrect = pygame.Rect(simcol * simscale, (simrow + 1) * simscale - cumulativesize, simscale, simscale * cellsize)
+					#cellsurface.set_alpha(int(pygame.math.clamp(flowingmaterialdata["fluidmass"] / maxmass * 255, 0, 255)))
+					cellsurface.fill(cellcolor)
+					pygame.Surface.blit(simsurface, cellsurface, simrect)
 			simcol += 1
 		simcol = 0
 		simrow += 1
