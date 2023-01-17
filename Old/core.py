@@ -6,9 +6,9 @@ import time
 
 pygame.init()
 
-screensize = screenwidth, screenheight = 1024, 1024
+screensize = screenwidth, screenheight = 2048, 2048
 simsize = simwidth, simheight = 32, 32
-simscale = 32
+simscale = 64
 
 maxmass = 1
 timescale = .2
