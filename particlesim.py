@@ -9,12 +9,13 @@ import random
 import time
 import csv
 import numpy as np
+import math
 
 pygame.init()
 
 screensize = screenwidth, screenheight = 1024, 1024
 cellsize = 16
-minballsincell = 3 # Add blanks to cells with less balls than this
+minballsincell = 1 # Add blanks to cells with less balls than this
 cellsbrightness = 1
 framerate = 60
 
@@ -47,7 +48,7 @@ def objimport(file):
 def add_ball(space, posx, posy, color):
 	posx, posy = int(posx), int(posy)
 	mass = 1
-	radius = 8
+	radius = 12
 	jitter = 5
 	body = pymunk.Body()
 	x = random.randint(posx-jitter, posx+jitter)
@@ -63,7 +64,7 @@ def add_ball(space, posx, posy, color):
 	return shape, body
 
 def switch_ball(arbiter, space, data):
-	switchodds = 1/30
+	switchodds = 1/100
 	ball0, ball1 = arbiter.shapes
 	if ball0.color != ball1.color:
 		ball0newcolor0, ball1newcolor0 = (ball0.color[0] + (ball1.color[0] * switchodds)) / (1 + switchodds), (ball1.color[0] + (ball0.color[0] * switchodds)) / (1 + switchodds)
@@ -100,12 +101,17 @@ def draw_balls(screen, balls):
 
 def draw_balls_cells(cellarray, cellsize, balls):
 	for ball in balls:
-		p = int(ball.body.position.x), int(ball.body.position.y)
-		x = int(p[0]/cellsize)
-		y = int(p[1]/cellsize)
-		color = (int(ball.color[0]), int(ball.color[1]), int(ball.color[2]))
-		thisballvalues = np.array((color[0], color[1], color[2], 1), dtype = np.int16)
-		cellarray[x,y] = cellarray[x, y] + thisballvalues
+		p = ball.body.position.x, ball.body.position.y
+		x = p[0]/cellsize
+		y = p[1]/cellsize
+		radius = ball.radius / cellsize
+		color = (ball.color[0]/5, ball.color[1]/5, ball.color[2]/5)
+		thisballvalues = np.array((color[0], color[1], color[2], 1/5))
+		cellarray[round(x),round(y)] = cellarray[round(x),round(y)] + thisballvalues
+		cellarray[math.ceil(x - radius),round(y)] = cellarray[math.ceil(x - radius),round(y)] + thisballvalues
+		cellarray[math.floor(x + radius),round(y)] = cellarray[math.floor(x + radius),round(y)] + thisballvalues
+		cellarray[round(x),math.ceil(y - radius)] = cellarray[round(x),math.ceil(y - radius)] + thisballvalues
+		cellarray[round(x),math.floor(y + radius)] = cellarray[round(x),math.floor(y + radius)] + thisballvalues
 
 def draw_cell_array(outputsurface, cellarray):
 	width, height, depth = np.shape(cellarray)
@@ -204,24 +210,24 @@ def main():
 				sys.exit(0)
 			elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
 				sys.exit(0)
-		if len(balls)<1500:
+		if len(balls)<1000:
 			ticks_to_next_blueball -= 1
 			if ticks_to_next_blueball <= 0:
-				ticks_to_next_blueball = 2
-				ball_shape, ball_body = add_ball(space, screenwidth/3, screenheight/2, (0, 0, 255))
+				ticks_to_next_blueball = 3
+				ball_shape, ball_body = add_ball(space, (screenwidth/3)-20, screenheight/3*2, (0, 0, 255))
 				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
 				balls.append(ball_shape)
 			
 			ticks_to_next_redball -= 1
 			if ticks_to_next_redball <= 0:
-				ticks_to_next_redball = 2
+				ticks_to_next_redball = 3
 				ball_shape, ball_body = add_ball(space, (screenwidth/3)*2, screenheight/2, (255, 0, 0))
 				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
 				balls.append(ball_shape)
 			
 			ticks_to_next_greenball -= 1
 			if ticks_to_next_greenball <= 0:
-				ticks_to_next_greenball = 4
+				ticks_to_next_greenball = 10
 				ball_shape, ball_body = add_ball(space, 390, 140, (0, 255, 0))
 				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
 				balls.append(ball_shape)
@@ -244,18 +250,19 @@ def main():
 		renderframes -= 1
 		if renderframes <= 0:
 			cellsurface = pygame.Surface(screensize)
-			cellarray = np.zeros((int(screenwidth / cellsize), int(screenheight / cellsize), 4), dtype = np.int16) # Cellgrid X, Cellgrid Y, and RGB+Count 
+			cellarray = np.zeros((int(screenwidth / cellsize), int(screenheight / cellsize), 4)) # Cellgrid X, Cellgrid Y, and RGB+Count 
 
 			if len(balls) > 0: draw_balls_cells(cellarray, cellsize, balls)
 
 			draw_cell_array(cellsurface, cellarray)
 			draw_lines(cellsurface, lines)
-			cellsurface.set_alpha(int(255/(framerate)))
-			renderframes = framerate
+			#cellsurface.set_alpha(int(255/(framerate/4)))
+			screen.blit(cellsurface, (0,0))
+			renderframes = framerate/6
 		if renderframes % 2 == 0:
 			#pixelarray = np.empty(screen.get_size())
 
-			screen.blit(cellsurface, (0,0))
+			#screen.blit(cellsurface, (0,0))
 
 			#if len(balls) > 0: draw_balls(screen, balls)
 			
