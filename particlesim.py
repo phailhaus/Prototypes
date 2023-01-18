@@ -13,8 +13,8 @@ import numpy as np
 pygame.init()
 
 screensize = screenwidth, screenheight = 1024, 1024
-cellsize = 32
-minballsincell = 12 # Add blanks to cells with less balls than this
+cellsize = 16
+minballsincell = 3 # Add blanks to cells with less balls than this
 cellsbrightness = 1
 framerate = 60
 
@@ -44,7 +44,7 @@ def objimport(file):
 				
 
 
-def add_ball(space, posx, posy):
+def add_ball(space, posx, posy, color):
 	posx, posy = int(posx), int(posy)
 	mass = 1
 	radius = 8
@@ -54,6 +54,7 @@ def add_ball(space, posx, posy):
 	y = random.randint(posy-jitter, posy+jitter)
 	body.position = x, y
 	shape = pymunk.Circle(body, radius)
+	shape.color = color
 	shape.collision_type = collisionTypes["ball"]
 	shape.mass = mass
 	shape.friction = .5
@@ -62,22 +63,30 @@ def add_ball(space, posx, posy):
 	return shape, body
 
 def switch_ball(arbiter, space, data):
-	switchodds = 1/100
-	randomnumber = random.random()
-	if randomnumber <= switchodds:
-		ball0, ball1 = arbiter.shapes
-		ball0.body.position, ball1.body.position = ball1.body.position, ball0.body.position # Invert positions to emulate diffusion
-		ball0.body.velocity, ball1.body.velocity = ball1.body.velocity, ball0.body.velocity # Invert velocities to emulate diffusion
+	switchodds = 1/30
+	ball0, ball1 = arbiter.shapes
+	if ball0.color != ball1.color:
+		ball0newcolor0, ball1newcolor0 = (ball0.color[0] + (ball1.color[0] * switchodds)) / (1 + switchodds), (ball1.color[0] + (ball0.color[0] * switchodds)) / (1 + switchodds)
+		ball0newcolor1, ball1newcolor1 = (ball0.color[1] + (ball1.color[1] * switchodds)) / (1 + switchodds), (ball1.color[1] + (ball0.color[1] * switchodds)) / (1 + switchodds)
+		ball0newcolor2, ball1newcolor2 = (ball0.color[2] + (ball1.color[2] * switchodds)) / (1 + switchodds), (ball1.color[2] + (ball0.color[2] * switchodds)) / (1 + switchodds)
+		ball0.color = (ball0newcolor0, ball0newcolor1, ball0newcolor2)
+		ball1.color = (ball1newcolor0, ball1newcolor1, ball1newcolor2)
+		# randomnumber = random.random()
+		# if randomnumber <= switchodds:
+			
+		# 	ball0.body.position, ball1.body.position = ball1.body.position, ball0.body.position # Invert positions to emulate diffusion
+		# 	ball0.body.velocity, ball1.body.velocity = ball1.body.velocity, ball0.body.velocity # Invert velocities to emulate diffusion
 	return True
 
 
 
-def draw_balls(screen, balls, color):
+def draw_balls(screen, balls):
 	#mappedcolor = screen.map_rgb(color)
 	for ball in balls:
 		p = int(ball.body.position.x), int(ball.body.position.y)
 		x = p[0]
 		y = p[1]
+		color = (int(ball.color[0]), int(ball.color[1]), int(ball.color[2]))
 		pygame.gfxdraw.pixel(screen, x, y, color)
 		# pixelarray[(x,y)] = mappedcolor
 		# pixelarray[(x-1,y)] = mappedcolor
@@ -89,11 +98,12 @@ def draw_balls(screen, balls, color):
 		#pygame.draw.circle(screen, color, p, int(ball.radius), 1)
 		#pygame.gfxdraw.pixel(screen, p[0], p[1], color)
 
-def draw_balls_cells(cellarray, cellsize, balls, color):
+def draw_balls_cells(cellarray, cellsize, balls):
 	for ball in balls:
 		p = int(ball.body.position.x), int(ball.body.position.y)
 		x = int(p[0]/cellsize)
 		y = int(p[1]/cellsize)
+		color = (int(ball.color[0]), int(ball.color[1]), int(ball.color[2]))
 		thisballvalues = np.array((color[0], color[1], color[2], 1), dtype = np.int16)
 		cellarray[x,y] = cellarray[x, y] + thisballvalues
 
@@ -180,9 +190,7 @@ def main():
 	#space.use_spatial_hash(5,40000)
 
 	lines = add_environment(space)
-	blueballs = []
-	redballs = []
-	greenballs = []
+	balls = []
 	ticks_to_next_blueball = 2
 	ticks_to_next_redball = 2
 	ticks_to_next_greenball = 2
@@ -196,27 +204,27 @@ def main():
 				sys.exit(0)
 			elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
 				sys.exit(0)
-		
-		ticks_to_next_blueball -= 1
-		if ticks_to_next_blueball <= 0:
-			ticks_to_next_blueball = 2
-			ball_shape, ball_body = add_ball(space, screenwidth/3, screenheight/2)
-			ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
-			blueballs.append(ball_shape)
-		
-		ticks_to_next_redball -= 1
-		if ticks_to_next_redball <= 0:
-			ticks_to_next_redball = 2
-			ball_shape, ball_body = add_ball(space, (screenwidth/3)*2, screenheight/2)
-			ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
-			redballs.append(ball_shape)
-		
-		ticks_to_next_greenball -= 1
-		if ticks_to_next_greenball <= 0:
-			ticks_to_next_greenball = 4
-			ball_shape, ball_body = add_ball(space, 390, 140)
-			ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
-			greenballs.append(ball_shape)
+		if len(balls)<1500:
+			ticks_to_next_blueball -= 1
+			if ticks_to_next_blueball <= 0:
+				ticks_to_next_blueball = 2
+				ball_shape, ball_body = add_ball(space, screenwidth/3, screenheight/2, (0, 0, 255))
+				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
+				balls.append(ball_shape)
+			
+			ticks_to_next_redball -= 1
+			if ticks_to_next_redball <= 0:
+				ticks_to_next_redball = 2
+				ball_shape, ball_body = add_ball(space, (screenwidth/3)*2, screenheight/2, (255, 0, 0))
+				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
+				balls.append(ball_shape)
+			
+			ticks_to_next_greenball -= 1
+			if ticks_to_next_greenball <= 0:
+				ticks_to_next_greenball = 4
+				ball_shape, ball_body = add_ball(space, 390, 140, (0, 255, 0))
+				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
+				balls.append(ball_shape)
 
 		space.step(1/framerate)
 
@@ -238,9 +246,7 @@ def main():
 			cellsurface = pygame.Surface(screensize)
 			cellarray = np.zeros((int(screenwidth / cellsize), int(screenheight / cellsize), 4), dtype = np.int16) # Cellgrid X, Cellgrid Y, and RGB+Count 
 
-			if len(blueballs) > 0: draw_balls_cells(cellarray, cellsize, blueballs, (0, 0, 255))
-			if len(redballs) > 0: draw_balls_cells(cellarray, cellsize, redballs, (255, 0, 0))
-			if len(greenballs) > 0: draw_balls_cells(cellarray, cellsize, greenballs, (0, 255, 0))
+			if len(balls) > 0: draw_balls_cells(cellarray, cellsize, balls)
 
 			draw_cell_array(cellsurface, cellarray)
 			draw_lines(cellsurface, lines)
@@ -251,9 +257,7 @@ def main():
 
 			screen.blit(cellsurface, (0,0))
 
-			#if len(blueballs) > 0: draw_balls(screen, blueballs, (0, 0, 255))
-			#if len(redballs) > 0: draw_balls(screen, redballs, (255, 0, 0))
-			#if len(greenballs) > 0: draw_balls(screen, greenballs, (0, 255, 0))
+			#if len(balls) > 0: draw_balls(screen, balls)
 			
 			#pygame.surfarray.blit_array(screen, pixelarray)
 
@@ -265,7 +269,7 @@ def main():
 			perfframes = 0
 			perfnew = time.perf_counter()
 			perfframetime = (perfnew - perfstart)/framerate
-			print(f"{1/perfframetime} FPS, {len(blueballs)+len(redballs)+len(greenballs)} balls, {perfframetime/(len(blueballs)+len(redballs)+len(greenballs))} per ball")
+			print(f"{1/perfframetime} FPS, {len(balls)} balls, {perfframetime/(len(balls))} per ball")
 			perfstart = perfnew
 		clock.tick(framerate)
 
