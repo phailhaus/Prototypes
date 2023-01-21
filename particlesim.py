@@ -3,8 +3,8 @@ import pygame.gfxdraw
 from pygame.locals import *
 import pymunk
 import pymunk.pygame_util
-import threading
 import sys
+import os
 import random
 import time
 import csv
@@ -18,6 +18,14 @@ cellsize = 16
 minballsincell = 1 # Add blanks to cells with less balls than this
 cellsbrightness = 1
 framerate = 60
+videoout = True
+videodirectory = "frames/"
+
+if videoout == True:
+	filelist = os.listdir(videodirectory)
+	for filename in filelist:
+		if filename.endswith(".png"):
+			os.remove(os.path.join(videodirectory, filename))
 
 collisionTypes = dict()
 collisionTypes["environment"] = 0
@@ -107,11 +115,11 @@ def draw_balls_cells(cellarray, cellsize, balls):
 		radius = ball.radius / cellsize
 		color = (ball.color[0]/5, ball.color[1]/5, ball.color[2]/5)
 		thisballvalues = np.array((color[0], color[1], color[2], 1/5))
-		cellarray[round(x),round(y)] = cellarray[round(x),round(y)] + thisballvalues
-		cellarray[math.ceil(x - radius),round(y)] = cellarray[math.ceil(x - radius),round(y)] + thisballvalues
-		cellarray[math.floor(x + radius),round(y)] = cellarray[math.floor(x + radius),round(y)] + thisballvalues
-		cellarray[round(x),math.ceil(y - radius)] = cellarray[round(x),math.ceil(y - radius)] + thisballvalues
-		cellarray[round(x),math.floor(y + radius)] = cellarray[round(x),math.floor(y + radius)] + thisballvalues
+		cellarray[math.floor(x),math.floor(y)] = cellarray[math.floor(x),math.floor(y)] + thisballvalues
+		cellarray[math.floor(x - radius),math.floor(y)] = cellarray[math.floor(x - radius),math.floor(y)] + thisballvalues
+		cellarray[math.floor(x + radius),math.floor(y)] = cellarray[math.floor(x + radius),math.floor(y)] + thisballvalues
+		cellarray[math.floor(x),math.floor(y - radius)] = cellarray[math.floor(x),math.floor(y - radius)] + thisballvalues
+		cellarray[math.floor(x),math.floor(y + radius)] = cellarray[math.floor(x),math.floor(y + radius)] + thisballvalues
 
 def draw_cell_array(outputsurface, cellarray):
 	width, height, depth = np.shape(cellarray)
@@ -186,6 +194,7 @@ def main():
 	perfstart = time.perf_counter()
 	perfframes = 0
 	renderframes = 0
+	savedframes = 0
 
 	space = pymunk.Space()
 	collisionBallBall = space.add_collision_handler(collisionTypes["ball"], collisionTypes["ball"])
@@ -210,26 +219,26 @@ def main():
 				sys.exit(0)
 			elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
 				sys.exit(0)
-		if len(balls)<1000:
+		if len(balls)<800:
 			ticks_to_next_blueball -= 1
 			if ticks_to_next_blueball <= 0:
 				ticks_to_next_blueball = 3
 				ball_shape, ball_body = add_ball(space, (screenwidth/3)-20, screenheight/3*2, (0, 0, 255))
-				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
+				ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
 				balls.append(ball_shape)
 			
 			ticks_to_next_redball -= 1
 			if ticks_to_next_redball <= 0:
 				ticks_to_next_redball = 3
 				ball_shape, ball_body = add_ball(space, (screenwidth/3)*2, screenheight/2, (255, 0, 0))
-				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
+				ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
 				balls.append(ball_shape)
 			
 			ticks_to_next_greenball -= 1
 			if ticks_to_next_greenball <= 0:
 				ticks_to_next_greenball = 10
 				ball_shape, ball_body = add_ball(space, 390, 140, (0, 255, 0))
-				ball_body.apply_impulse_at_local_point((random.randint(-15, 15),random.randint(-15, 15)))
+				ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
 				balls.append(ball_shape)
 
 		space.step(1/framerate)
@@ -258,8 +267,14 @@ def main():
 			draw_lines(cellsurface, lines)
 			#cellsurface.set_alpha(int(255/(framerate/4)))
 			screen.blit(cellsurface, (0,0))
+			pygame.display.flip()
+			if videoout == True:
+				filename = fr"frames\fluidframe{savedframes:04d}.png"
+				pygame.image.save(screen, filename)
+				savedframes += 1
+
 			renderframes = framerate/6
-		if renderframes % 2 == 0:
+		#if renderframes % 2 == 0:
 			#pixelarray = np.empty(screen.get_size())
 
 			#screen.blit(cellsurface, (0,0))
@@ -268,7 +283,7 @@ def main():
 			
 			#pygame.surfarray.blit_array(screen, pixelarray)
 
-			pygame.display.flip()
+			#pygame.display.flip()
 			
 
 		perfframes += 1
