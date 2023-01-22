@@ -18,7 +18,7 @@ cellsize = 16
 minballsincell = 1 # Add blanks to cells with less balls than this
 cellsbrightness = 1
 framerate = 60
-videoout = True
+videoout = False
 videodirectory = "frames/"
 
 if videoout == True:
@@ -209,6 +209,9 @@ def main():
 	ticks_to_next_blueball = 2
 	ticks_to_next_redball = 2
 	ticks_to_next_greenball = 2
+	
+	ticks_to_next_playerball = 2
+	playercolor = (255, 0, 0)
 
 	screen.fill((0,0,0))
 	draw_lines(screen, lines)
@@ -219,27 +222,52 @@ def main():
 				sys.exit(0)
 			elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
 				sys.exit(0)
-		if len(balls)<800:
-			ticks_to_next_blueball -= 1
-			if ticks_to_next_blueball <= 0:
-				ticks_to_next_blueball = 3
-				ball_shape, ball_body = add_ball(space, (screenwidth/3)-20, screenheight/3*2, (0, 0, 255))
+
+		# Input
+		lmb, mmb, rmb = pygame.mouse.get_pressed()
+		mousepos = pygame.mouse.get_pos()
+		keyspressed = pygame.key.get_pressed()
+		if keyspressed[K_1]: playercolor = (255, 0, 0)
+		if keyspressed[K_2]: playercolor = (0, 255, 0)
+		if keyspressed[K_3]: playercolor = (0, 0, 255)
+		if keyspressed[K_r]:
+			for ball in balls:
+				space.remove(ball)
+			balls.clear()
+
+		if lmb:
+			ticks_to_next_playerball -= 1
+			if ticks_to_next_playerball <= 0:
+				ticks_to_next_playerball = 3
+				ball_shape, ball_body = add_ball(space, mousepos[0], mousepos[1], playercolor)
 				ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
 				balls.append(ball_shape)
+		
+		if len(balls) > 800:
+			space.remove(balls[0])
+			del balls[0]
+
+		# if len(balls)<800:
+		# 	ticks_to_next_blueball -= 1
+		# 	if ticks_to_next_blueball <= 0:
+		# 		ticks_to_next_blueball = 3
+		# 		ball_shape, ball_body = add_ball(space, (screenwidth/3)-20, screenheight/3*2, (0, 0, 255))
+		# 		ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
+		# 		balls.append(ball_shape)
 			
-			ticks_to_next_redball -= 1
-			if ticks_to_next_redball <= 0:
-				ticks_to_next_redball = 3
-				ball_shape, ball_body = add_ball(space, (screenwidth/3)*2, screenheight/2, (255, 0, 0))
-				ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
-				balls.append(ball_shape)
+		# 	ticks_to_next_redball -= 1
+		# 	if ticks_to_next_redball <= 0:
+		# 		ticks_to_next_redball = 3
+		# 		ball_shape, ball_body = add_ball(space, (screenwidth/3)*2, screenheight/2, (255, 0, 0))
+		# 		ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
+		# 		balls.append(ball_shape)
 			
-			ticks_to_next_greenball -= 1
-			if ticks_to_next_greenball <= 0:
-				ticks_to_next_greenball = 10
-				ball_shape, ball_body = add_ball(space, 390, 140, (0, 255, 0))
-				ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
-				balls.append(ball_shape)
+		# 	ticks_to_next_greenball -= 1
+		# 	if ticks_to_next_greenball <= 0:
+		# 		ticks_to_next_greenball = 10
+		# 		ball_shape, ball_body = add_ball(space, 390, 140, (0, 255, 0))
+		# 		ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
+		# 		balls.append(ball_shape)
 
 		space.step(1/framerate)
 
@@ -291,7 +319,7 @@ def main():
 			perfframes = 0
 			perfnew = time.perf_counter()
 			perfframetime = (perfnew - perfstart)/framerate
-			print(f"{1/perfframetime} FPS, {len(balls)} balls, {perfframetime/(len(balls))} per ball")
+			if len(balls) > 0: print(f"{1/perfframetime} FPS, {len(balls)} balls, {perfframetime/(len(balls))} per ball")
 			perfstart = perfnew
 		clock.tick(framerate)
 
