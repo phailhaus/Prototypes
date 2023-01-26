@@ -1,9 +1,18 @@
 import os
-from sys import stdout
+import sys
 import time
+import pygame
+from pygame.locals import *
+import pygame.freetype
+
+pygame.init()
 
 termwidth = 120
 termheight = 30
+
+font = pygame.freetype.SysFont("Consolas", 16)
+fontsize = (9, 16)
+#font.size = fontsize
 
 newline = chr(10)
 blank = " "
@@ -66,28 +75,50 @@ class ScreenArray:
 		for row in self.array:
 			drawstring += newline + row
 		cls()
-		stdout.write(drawstring)
-    
-mainscreen = ScreenArray(termwidth, termheight)
-subscreen = ScreenArray(40, 10)
-framenum = 0
-
-subscreen.write_line("X", (0, 0), 40)
-subscreen.write_line("X", (0, 10-1), 40)
-subscreen.write_line("X", (0, 0), 10, vertical=True)
-subscreen.write_line("X", (40-1, 0), 10, vertical=True)
-subscreenmessage = "Hello!"
-for i in range(len(subscreenmessage)):
-	subscreen.write_single(subscreenmessage[i], (20 - int(len(subscreenmessage)/2) + i, 5))
-
-while True:
-	mainscreen.reset()
-	mainscreen.write_line(fullblock, (0, 0), termwidth)
-	mainscreen.write_line(fullblock, (0, termheight-1), termwidth)
-	mainscreen.write_line(fullblock, (0, 0), termheight, vertical=True)
-	mainscreen.write_line(fullblock, (termwidth-1, 0), termheight, vertical=True)
-	mainscreen.write_array(subscreen, (framenum*4,framenum))
-	mainscreen.draw()
-	time.sleep(.5)
-	framenum += 1
+		sys.stdout.write(drawstring)
 	
+	def drawPygame(self,destinationSurface, position = (0, 0), fgcolor = (255, 255, 255), bgcolor = (0, 0, 0)):
+		surface = pygame.Surface((self.width * fontsize[0], self.height * fontsize[1]))
+		for i in range(len(self.array)):
+			font.render_to(surface, (0, i * fontsize[1]), self.array[i], fgcolor=fgcolor, bgcolor=bgcolor)
+		destinationSurface.blit(surface, position)
+
+def main():
+	pygameScreen = pygame.display.set_mode((termwidth * fontsize[0], termheight * fontsize[1]))
+
+	mainscreen = ScreenArray(termwidth, termheight)
+	subscreen = ScreenArray(40, 10)
+	framenum = 0
+
+	subscreen.write_line("X", (0, 0), 40)
+	subscreen.write_line("X", (0, 10-1), 40)
+	subscreen.write_line("X", (0, 0), 10, vertical=True)
+	subscreen.write_line("X", (40-1, 0), 10, vertical=True)
+	subscreenmessage = "Hello!"
+	for i in range(len(subscreenmessage)):
+		subscreen.write_single(subscreenmessage[i], (20 - int(len(subscreenmessage)/2) + i, 5))
+
+	while True:
+		for event in pygame.event.get():
+					if event.type == pygame.QUIT:
+						sys.exit(0)
+					elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+						sys.exit(0)
+
+		mainscreen.reset()
+		mainscreen.write_line(fullblock, (0, 0), termwidth)
+		mainscreen.write_line(fullblock, (0, termheight-1), termwidth)
+		mainscreen.write_line(fullblock, (0, 0), termheight, vertical=True)
+		mainscreen.write_line(fullblock, (termwidth-1, 0), termheight, vertical=True)
+		mainscreen.write_array(subscreen, (framenum*4,framenum))
+		mainscreen.draw()
+
+		pygameScreen.fill((0, 0, 0))
+		mainscreen.drawPygame(pygameScreen, fgcolor = (100, 255, 100), bgcolor = (30, 80, 30))
+		pygame.display.flip()
+
+		time.sleep(.5)
+		framenum += 1
+
+if __name__ == '__main__':
+	sys.exit(main())
