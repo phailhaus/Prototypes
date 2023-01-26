@@ -1,8 +1,6 @@
 import os
-import sys
 from sys import stdout
 import time
-import numpy as np
 
 termwidth = 120
 termheight = 30
