@@ -15,10 +15,10 @@ pygame.init()
 
 screensize = screenwidth, screenheight = 1024, 1024
 cellsize = 16
-minballsincell = 1 # Add blanks to cells with less balls than this
+minballsincell = 3 # Add blanks to cells with less balls than this
 cellsbrightness = 1
 framerate = 60
-videoout = False
+videoout = True
 videodirectory = "frames/"
 
 if videoout == True:
@@ -56,7 +56,7 @@ def objimport(file):
 def add_ball(space, posx, posy, color):
 	posx, posy = int(posx), int(posy)
 	mass = 1
-	radius = 12
+	radius = 6
 	jitter = 5
 	body = pymunk.Body()
 	x = random.randint(posx-jitter, posx+jitter)
@@ -200,7 +200,7 @@ def main():
 	collisionBallBall = space.add_collision_handler(collisionTypes["ball"], collisionTypes["ball"])
 	collisionBallBall.post_solve = switch_ball
 
-	#space.gravity = (0.0, 900.0)
+	space.gravity = (0.0, 1.0)
 	space.iterations = 1
 	#space.use_spatial_hash(5,40000)
 
@@ -243,31 +243,31 @@ def main():
 				ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
 				balls.append(ball_shape)
 		
-		if len(balls) > 800:
+		if len(balls) > 3000:
 			space.remove(balls[0])
 			del balls[0]
 
-		# if len(balls)<800:
-		# 	ticks_to_next_blueball -= 1
-		# 	if ticks_to_next_blueball <= 0:
-		# 		ticks_to_next_blueball = 3
-		# 		ball_shape, ball_body = add_ball(space, (screenwidth/3)-20, screenheight/3*2, (0, 0, 255))
-		# 		ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
-		# 		balls.append(ball_shape)
+		if len(balls)<3000:
+			ticks_to_next_blueball -= 1
+			if ticks_to_next_blueball <= 0:
+				ticks_to_next_blueball = 3
+				ball_shape, ball_body = add_ball(space, (screenwidth/3)-20, screenheight/3+20, (255, 200, 30))
+				ball_body.apply_impulse_at_local_point((random.randint(-10, 10),random.randint(-10, 50)))
+				balls.append(ball_shape)
 			
-		# 	ticks_to_next_redball -= 1
-		# 	if ticks_to_next_redball <= 0:
-		# 		ticks_to_next_redball = 3
-		# 		ball_shape, ball_body = add_ball(space, (screenwidth/3)*2, screenheight/2, (255, 0, 0))
-		# 		ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
-		# 		balls.append(ball_shape)
+			ticks_to_next_redball -= 1
+			if ticks_to_next_redball <= 0:
+				ticks_to_next_redball = 2
+				ball_shape, ball_body = add_ball(space, (screenwidth/3)*2, 900, (255, 40, 40))
+				ball_body.apply_impulse_at_local_point((random.randint(-5, 20),random.randint(-50, 10)))
+				balls.append(ball_shape)
 			
-		# 	ticks_to_next_greenball -= 1
-		# 	if ticks_to_next_greenball <= 0:
-		# 		ticks_to_next_greenball = 10
-		# 		ball_shape, ball_body = add_ball(space, 390, 140, (0, 255, 0))
-		# 		ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
-		# 		balls.append(ball_shape)
+			ticks_to_next_greenball -= 1
+			if ticks_to_next_greenball <= 0:
+				ticks_to_next_greenball = 5
+				ball_shape, ball_body = add_ball(space, 390, 140, (80, 255, 40))
+				ball_body.apply_impulse_at_local_point((random.randint(-30, 30),random.randint(-30, 30)))
+				balls.append(ball_shape)
 
 		space.step(1/framerate)
 
@@ -292,7 +292,7 @@ def main():
 			if len(balls) > 0: draw_balls_cells(cellarray, cellsize, balls)
 
 			draw_cell_array(cellsurface, cellarray)
-			draw_lines(cellsurface, lines)
+			#draw_lines(cellsurface, lines)
 			#cellsurface.set_alpha(int(255/(framerate/4)))
 			screen.blit(cellsurface, (0,0))
 			pygame.display.flip()
@@ -301,7 +301,7 @@ def main():
 				pygame.image.save(screen, filename)
 				savedframes += 1
 
-			renderframes = framerate/6
+			renderframes = framerate/4
 		#if renderframes % 2 == 0:
 			#pixelarray = np.empty(screen.get_size())
 
