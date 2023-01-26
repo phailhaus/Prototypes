@@ -76,6 +76,9 @@ subscreen.write_line("X", (0, 0), 40)
 subscreen.write_line("X", (0, 10-1), 40)
 subscreen.write_line("X", (0, 0), 10, vertical=True)
 subscreen.write_line("X", (40-1, 0), 10, vertical=True)
+subscreenmessage = "Hello!"
+for i in range(len(subscreenmessage)):
+	subscreen.write_single(subscreenmessage[i], (20 - int(len(subscreenmessage)/2) + i, 5))
 
 while True:
 	mainscreen.reset()
