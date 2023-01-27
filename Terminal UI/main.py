@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import math
 import pygame
 from pygame.locals import *
 import pygame.freetype
@@ -32,48 +33,62 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		self.array = [str(" " * self.width) for i in range(self.height)]
 		
 	def write_single(self, symbol, coords): # Write a single character to a specified position
-		x = round(coords[0])
-		y = round(coords[1])
-		symbol = str(symbol[0])
-		if x >= self.width or y >= self.height:
+		x = math.floor(coords[0])
+		y = math.floor(coords[1])
+		symbol = str(str(symbol)[0])
+		if x >= self.width or x < 0 or y >= self.height or y < 0:
 			return
 		self.array[y] = self.array[y][0:x] + symbol + self.array[y][x+1:self.width]
 	
-	def write_line(self, symbol, coords, length, vertical = False): # Write a line of the same character
-		x = round(coords[0])
-		y = round(coords[1])
-		symbol = str(symbol[0])
-		if x >= self.width or y >= self.height:
-			return
-		if not vertical:
-			if x + length >= self.width:
-				length = self.width - x
-			self.array[y] = self.array[y][0:x] + str(symbol * length) + self.array[y][x+length:]
-		elif vertical:
-			if y + length >= self.height:
-				length = self.height - y
-			for i in range(length):
-				self.array[y+i] = self.array[y+i][0:x] + symbol + self.array[y+i][x+1:]
+	def write_line(self, symbol, length, coords, angle=0, variablelength = False): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
+		symbol = str(str(symbol)[0])
+		if variablelength:
+			length = round(length * math.cos(math.radians(((angle + 45) % 90)-45)))
+		self.write_string(symbol * length, coords, angle)
 	
-	def write_string(self, string, coords, vertical = False): # Write a string to the surface
-		x = round(coords[0])
-		y = round(coords[1])
+	def write_string(self, string, coords, angle=0): # Write a string to the surface. Defaults to right, rotates clockwise
+		x = coords[0]
+		y = coords[1]
 		string = str(string)
-		if x >= self.width or y >= self.height:
-			return
-		if not vertical:
-			if x + len(string) >= self.width:
-				string = string[0:self.width - x]
-			self.array[y] = self.array[y][0:x] + string + self.array[y][x+len(string):]
-		elif vertical:
-			if y + len(string) >= self.height:
-				string = string[0:self.height - y]
-			for i in range(len(string)):
-				self.array[y+i] = self.array[y+i][0:x] + string[i] + self.array[y+i][x+1:]
+		angle = angle % 360
+
+		direction = "R"
+		if 45 <= angle < 135:
+			direction = "D"
+		elif 135 <= angle < 225:
+			direction = "L"
+		elif 225 <= angle < 315:
+			direction = "U"
+		
+		angle = ((angle + 45) % 90) - 45
+		
+		slope = math.tan(math.radians(angle))
+		slope = min(slope, 1)
+		slope = max(slope, -1)
+		for i in range(len(string)):
+			if x >= self.width or x < 0 or y >= self.height or y < 0:
+				return
+			else:
+				if direction == "R":
+					self.write_single(string[i], (x, y))
+					x += 1
+					y += slope
+				elif direction == "D":
+					self.write_single(string[i], (x, y))
+					x -= slope
+					y += 1
+				elif direction == "L":
+					self.write_single(string[i], (x, y))
+					x -= 1
+					y -= slope
+				elif direction == "U":
+					self.write_single(string[i], (x, y))
+					x += slope
+					y -= 1
 	
 	def write_surface(self, inputarray, coords): # Write a different surface onto this one
-		x = round(coords[0])
-		y = round(coords[1])
+		x = math.floor(coords[0])
+		y = math.floor(coords[1])
 		inputwidth = inputarray.width
 		inputheight = inputarray.height
 		if x >= self.width or y >= self.height:
@@ -106,11 +121,13 @@ def main():
 	subscreen = textSurface(40, 10)
 	framenum = 0
 
-	subscreen.write_line("X", (0, 0), 40)
-	subscreen.write_line("X", (0, 10-1), 40)
-	subscreen.write_line("X", (0, 0), 10, vertical=True)
-	subscreen.write_line("X", (40-1, 0), 10, vertical=True)
+	subscreen.write_line("X", 40, (0, 0))
+	subscreen.write_line("X", 40, (0, 10-1))
+	subscreen.write_line("X", 10, (0, 0), angle=90)
+	subscreen.write_line("X", 10, (40-1, 0), angle=90)
 	subscreen.write_string("Hello!", (20 - int(len("Hello!")/2), 5))
+
+	testangle = 0
 
 	while True:
 		for event in pygame.event.get():
@@ -120,18 +137,25 @@ def main():
 						sys.exit(0)
 
 		mainscreen.reset()
-		mainscreen.write_line(fullblock, (0, 0), termwidth)
-		mainscreen.write_line(fullblock, (0, termheight-1), termwidth)
-		mainscreen.write_line(fullblock, (0, 0), termheight, vertical=True)
-		mainscreen.write_line(fullblock, (termwidth-1, 0), termheight, vertical=True)
+		mainscreen.write_line(fullblock, termwidth, (0, 0))
+		mainscreen.write_line(fullblock, termwidth, (0, termheight-1))
+		mainscreen.write_line(fullblock, termheight, (0, 0), angle=90)
+		mainscreen.write_line(fullblock, termheight, (termwidth-1, 0), angle=90)
+
+		mainscreen.write_line("A", 14, (20, 15), testangle, variablelength=False)
+		mainscreen.write_line("B", 14, (termwidth-20, 15), testangle, variablelength=True)
+		mainscreen.write_string("ANGLES!", (60, 15), testangle)
 		mainscreen.write_surface(subscreen, (framenum*4,framenum))
+		
+
 		mainscreen.draw()
 
 		pygameScreen.fill((0, 0, 0))
 		mainscreen.drawPygame(pygameScreen, fgcolor = (100, 255, 100), bgcolor = (30, 80, 30))
 		pygame.display.flip()
 
-		time.sleep(.5)
+		time.sleep(.1)
+		testangle += 5
 		framenum += 1
 
 if __name__ == '__main__':
