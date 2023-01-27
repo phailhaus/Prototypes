@@ -55,6 +55,22 @@ class ScreenArray:
 			for i in range(length):
 				self.array[y+i] = self.array[y+i][0:x] + symbol + self.array[y+i][x+1:]
 	
+	def write_string(self, string, coords, vertical = False):
+		x = round(coords[0])
+		y = round(coords[1])
+		string = str(string)
+		if x >= self.width or y >= self.height:
+			return
+		if not vertical:
+			if x + len(string) >= self.width:
+				string = string[0:self.width - x]
+			self.array[y] = self.array[y][0:x] + string + self.array[y][x+len(string):]
+		elif vertical:
+			if y + len(string) >= self.height:
+				string = string[0:self.height - y]
+			for i in range(len(string)):
+				self.array[y+i] = self.array[y+i][0:x] + string[i] + self.array[y+i][x+1:]
+	
 	def write_array(self, inputarray, coords):
 		x = round(coords[0])
 		y = round(coords[1])
@@ -94,9 +110,7 @@ def main():
 	subscreen.write_line("X", (0, 10-1), 40)
 	subscreen.write_line("X", (0, 0), 10, vertical=True)
 	subscreen.write_line("X", (40-1, 0), 10, vertical=True)
-	subscreenmessage = "Hello!"
-	for i in range(len(subscreenmessage)):
-		subscreen.write_single(subscreenmessage[i], (20 - int(len(subscreenmessage)/2) + i, 5))
+	subscreen.write_string("Hello!", (20 - int(len("Hello!")/2), 5))
 
 	while True:
 		for event in pygame.event.get():
