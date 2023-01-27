@@ -29,7 +29,7 @@ class ScreenArray:
 		self.reset()
 
 	def reset(self):
-		self.array = [str(" " * self.width) for row in range(self.height)]
+		self.array = [str(" " * self.width) for i in range(self.height)]
 		
 	def write_single(self, symbol, coords):
 		x = round(coords[0])
@@ -48,12 +48,12 @@ class ScreenArray:
 		if not vertical:
 			if x + length >= self.width:
 				length = self.width - x
-			self.array[y] = self.array[y][0:x] + str(symbol * length) + self.array[y][x:x+length]
+			self.array[y] = self.array[y][0:x] + str(symbol * length) + self.array[y][x+length:]
 		elif vertical:
 			if y + length >= self.height:
 				length = self.height - y
-			for row in range(length):
-				self.array[y+row] = self.array[y+row][0:x] + symbol + self.array[y+row][x+1:self.width]
+			for i in range(length):
+				self.array[y+i] = self.array[y+i][0:x] + symbol + self.array[y+i][x+1:]
 	
 	def write_array(self, inputarray, coords):
 		x = round(coords[0])
