@@ -11,27 +11,27 @@ termwidth = 120
 termheight = 30
 
 font = pygame.freetype.SysFont("Consolas", 16)
-fontsize = (9, 16)
+fontsize = (9, 16) # Pygame window is (termwidth * fontsize[0], termheight * fontsize[1]). With antiailiased Consolas at 16, this should be (9, 16) 
 #font.size = fontsize
 
 newline = chr(10)
 blank = " "
 fullblock = chr(9608)
 
-def cls():
+def cls(): # Clears terminals
     os.system('cls' if os.name=='nt' else 'clear')
 
-class ScreenArray:
+class textSurface: # Similar in concept to a Pygame surface but with text instead of pixels
 	def __init__(self, width, height):
 		self.width = width
 		self.height = height
 		self.array = list()
 		self.reset()
 
-	def reset(self):
+	def reset(self): # Blank the surface
 		self.array = [str(" " * self.width) for i in range(self.height)]
 		
-	def write_single(self, symbol, coords):
+	def write_single(self, symbol, coords): # Write a single character to a specified position
 		x = round(coords[0])
 		y = round(coords[1])
 		symbol = str(symbol[0])
@@ -39,7 +39,7 @@ class ScreenArray:
 			return
 		self.array[y] = self.array[y][0:x] + symbol + self.array[y][x+1:self.width]
 	
-	def write_line(self, symbol, coords, length, vertical = False):
+	def write_line(self, symbol, coords, length, vertical = False): # Write a line of the same character
 		x = round(coords[0])
 		y = round(coords[1])
 		symbol = str(symbol[0])
@@ -55,7 +55,7 @@ class ScreenArray:
 			for i in range(length):
 				self.array[y+i] = self.array[y+i][0:x] + symbol + self.array[y+i][x+1:]
 	
-	def write_string(self, string, coords, vertical = False):
+	def write_string(self, string, coords, vertical = False): # Write a string to the surface
 		x = round(coords[0])
 		y = round(coords[1])
 		string = str(string)
@@ -71,7 +71,7 @@ class ScreenArray:
 			for i in range(len(string)):
 				self.array[y+i] = self.array[y+i][0:x] + string[i] + self.array[y+i][x+1:]
 	
-	def write_array(self, inputarray, coords):
+	def write_surface(self, inputarray, coords): # Write a different surface onto this one
 		x = round(coords[0])
 		y = round(coords[1])
 		inputwidth = inputarray.width
@@ -86,14 +86,14 @@ class ScreenArray:
 			self.array[y+i] = self.array[y+i][0:x] + inputarray.array[i][0:inputwidth] + self.array[y+i][x+inputwidth:self.width]
 		
 
-	def draw(self):
+	def draw(self): # Draw the surface to the terminal
 		drawstring = ""
 		for row in self.array:
 			drawstring += newline + row
 		cls()
 		sys.stdout.write(drawstring)
 	
-	def drawPygame(self,destinationSurface, position = (0, 0), fgcolor = (255, 255, 255), bgcolor = (0, 0, 0)):
+	def drawPygame(self,destinationSurface, position = (0, 0), fgcolor = (255, 255, 255), bgcolor = (0, 0, 0)): # Draw the surface to a given Pygame surface
 		surface = pygame.Surface((self.width * fontsize[0], self.height * fontsize[1]))
 		for i in range(len(self.array)):
 			font.render_to(surface, (0, i * fontsize[1]), self.array[i], fgcolor=fgcolor, bgcolor=bgcolor)
@@ -102,8 +102,8 @@ class ScreenArray:
 def main():
 	pygameScreen = pygame.display.set_mode((termwidth * fontsize[0], termheight * fontsize[1]))
 
-	mainscreen = ScreenArray(termwidth, termheight)
-	subscreen = ScreenArray(40, 10)
+	mainscreen = textSurface(termwidth, termheight)
+	subscreen = textSurface(40, 10)
 	framenum = 0
 
 	subscreen.write_line("X", (0, 0), 40)
@@ -124,7 +124,7 @@ def main():
 		mainscreen.write_line(fullblock, (0, termheight-1), termwidth)
 		mainscreen.write_line(fullblock, (0, 0), termheight, vertical=True)
 		mainscreen.write_line(fullblock, (termwidth-1, 0), termheight, vertical=True)
-		mainscreen.write_array(subscreen, (framenum*4,framenum))
+		mainscreen.write_surface(subscreen, (framenum*4,framenum))
 		mainscreen.draw()
 
 		pygameScreen.fill((0, 0, 0))
