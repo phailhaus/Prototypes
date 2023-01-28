@@ -22,6 +22,8 @@ videoout = True
 videodirectory = "frames/"
 
 if videoout == True:
+        if not os.access(videodirectory, os.F_OK):
+            os.mkdir(videodirectory)
 	filelist = os.listdir(videodirectory)
 	for filename in filelist:
 		if filename.endswith(".png"):
@@ -297,8 +299,8 @@ def main():
 			screen.blit(cellsurface, (0,0))
 			pygame.display.flip()
 			if videoout == True:
-				filename = fr"frames\fluidframe{savedframes:04d}.png"
-				pygame.image.save(screen, filename)
+				filename = fr"fluidframe{savedframes:04d}.png"
+				pygame.image.save(screen, os.path.join(videodirectory, filename))
 				savedframes += 1
 
 			renderframes = framerate/4
