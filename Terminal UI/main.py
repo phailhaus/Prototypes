@@ -118,19 +118,17 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		self.write_line(symbol, width, bottomleftcorner, angle) # Bottom
 		self.write_line(symbol, height, toprightcorner, angle+90) # Right
 	
-	def write_surface(self, inputarray, coords): # Write a different surface onto this one
-		x = math.floor(coords[0])
-		y = math.floor(coords[1])
+	def write_surface(self, inputarray, coords, angle=0, fromcenter=False): # Write a different surface onto this one
 		inputwidth = inputarray.width
 		inputheight = inputarray.height
-		if x >= self.width or y >= self.height:
-			return
-		if x + inputwidth >= self.width:
-			inputwidth = self.width - x
-		if y + inputheight >= self.height:
-			inputheight = self.height - y
+		if fromcenter:
+			fromcenteroffsetleft = self.calc_slope(inputwidth/2, angle+180)[-1]
+			fromcenteroffsetup = self.calc_slope(inputheight/2, angle+270)[-1]
+			fromcenteroffset = (fromcenteroffsetleft[0] + fromcenteroffsetup[0], fromcenteroffsetleft[1] + fromcenteroffsetup[1])
+			coords = (coords[0] + fromcenteroffset[0], coords[1] + fromcenteroffset[1])
+		leftedgeoffsets = self.calc_slope(inputheight, angle+90)
 		for i in range(inputheight):
-			self.array[y+i] = self.array[y+i][0:x] + inputarray.array[i][0:inputwidth] + self.array[y+i][x+inputwidth:self.width]
+			self.write_string(inputarray.array[i], (coords[0] + leftedgeoffsets[i][0], coords[1] + leftedgeoffsets[i][1]), angle)
 		
 
 	def draw(self): # Draw the surface to the terminal
@@ -150,14 +148,11 @@ def main():
 	pygameScreen = pygame.display.set_mode((termwidth * fontsize[0], termheight * fontsize[1]))
 
 	mainscreen = textSurface(termwidth, termheight)
-	subscreen = textSurface(40, 10)
+	subscreen = textSurface(20, 10)
 	framenum = 0
 
-	subscreen.write_line("X", 40, (0, 0))
-	subscreen.write_line("X", 40, (0, 10-1))
-	subscreen.write_line("X", 10, (0, 0), angle=90)
-	subscreen.write_line("X", 10, (40-1, 0), angle=90)
-	subscreen.write_string("Hello!", (20 - int(len("Hello!")/2), 5))
+	subscreen.write_rectangle("X", (0,0), subscreen.width, subscreen.height)
+	subscreen.write_string("Hello!", (10 - int(len("Hello!")/2), 5))
 
 	testangle = 0
 
@@ -178,7 +173,7 @@ def main():
 		mainscreen.write_rectangle("F", (35, 15), 9, 7, testangle, fromcenter=True, filled=True, filledsymbol=".")
 		mainscreen.write_line("B", 14, (termwidth-20, 15), testangle, variablelength=True)
 		mainscreen.write_string("ANGLES!", (60, 15), testangle)
-		mainscreen.write_surface(subscreen, (framenum*4,framenum))
+		mainscreen.write_surface(subscreen, (60,15), testangle, fromcenter=True)
 		
 
 		mainscreen.draw()
