@@ -111,7 +111,12 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		
 		if filled:
 			for i in range(height):
-				self.write_line(filledsymbol, width, (coords[0] + leftedgeoffsets[i][0], coords[1] + leftedgeoffsets[i][1]), angle)
+				self.write_line(filledsymbol, width, (coords[0] + leftedgeoffsets[i][0], coords[1] + leftedgeoffsets[i][1]), angle) # Draw a line parallel to the top edge from each point on the left edge 
+				a = leftedgeoffsets[0][0]
+				b = leftedgeoffsets[i][0] + math.copysign(1, topedgeoffsets[-1][0])
+				c = leftedgeoffsets[-1][0]
+				if (a <= b <= c) or (c <= b <= a):
+					self.write_line(filledsymbol, width-1, (coords[0] + b, coords[1] + leftedgeoffsets[i][1]), angle) # Draw extra lines offset by one X in the direction the top edge is going to fill gaps at angles
 		
 		self.write_line(symbol, width, coords, angle) # Top
 		self.write_line(symbol, height, coords, angle+90) # Left
@@ -152,7 +157,7 @@ def main():
 	framenum = 0
 
 	subscreen.write_rectangle("X", (0,0), subscreen.width, subscreen.height)
-	subscreen.write_string("Hello!", (10 - int(len("Hello!")/2), 5))
+	subscreen.write_string("Periods are gaps!", (10 - int(len("Periods are gaps!")/2), 5))
 
 	testangle = 0
 
@@ -164,15 +169,14 @@ def main():
 						sys.exit(0)
 
 		mainscreen.reset()
-		mainscreen.write_line(fullblock, termwidth, (0, 0))
-		mainscreen.write_line(fullblock, termwidth, (0, termheight-1))
-		mainscreen.write_line(fullblock, termheight, (0, 0), angle=90)
-		mainscreen.write_line(fullblock, termheight, (termwidth-1, 0), angle=90)
+		mainscreen.write_rectangle(fullblock, (0, 0), termwidth, termheight)
+
 
 		mainscreen.write_rectangle("A", (20, 15), 7, 5, testangle, fromcenter=True)
 		mainscreen.write_rectangle("F", (35, 15), 9, 7, testangle, fromcenter=True, filled=True, filledsymbol=".")
 		mainscreen.write_line("B", 14, (termwidth-20, 15), testangle, variablelength=True)
-		mainscreen.write_string("ANGLES!", (60, 15), testangle)
+		#mainscreen.write_string("ANGLES!", (60, 15), testangle)
+		mainscreen.write_rectangle("F", (60, 15), 20, 10, testangle, fromcenter=True, filled=True, filledsymbol=".")
 		mainscreen.write_surface(subscreen, (60,15), testangle, fromcenter=True)
 		
 
