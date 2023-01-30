@@ -48,10 +48,12 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 			direction = "U"
 		
 		angle = ((angle + 45) % 90) - 45
-		
-		slope = math.tan(math.radians(angle))
-		slope = min(slope, 1)
-		slope = max(slope, -1)
+		if angle == -45:
+			slope = -1
+		else:
+			slope = math.tan(math.radians(angle))
+			slope = min(slope, 1)
+			slope = max(slope, -1)
 		for i in range(length):
 			if direction == "R":
 				offsetlist.append((math.floor(x), math.floor(y)))
