@@ -22,8 +22,8 @@ videoout = True
 videodirectory = "frames/"
 
 if videoout == True:
-        if not os.access(videodirectory, os.F_OK):
-            os.mkdir(videodirectory)
+	if not os.access(videodirectory, os.F_OK):
+		os.mkdir(videodirectory)
 	filelist = os.listdir(videodirectory)
 	for filename in filelist:
 		if filename.endswith(".png"):
