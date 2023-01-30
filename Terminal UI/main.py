@@ -23,14 +23,18 @@ def cls(): # Clears terminals
     os.system('cls' if os.name=='nt' else 'clear')
 
 class textSurface: # Similar in concept to a Pygame surface but with text instead of pixels
-	def __init__(self, width, height):
+	def __init__(self, width, height, defaultfgcolor = (255, 255, 255), defaultbgcolor = (0, 0, 0)):
 		self.width = width
 		self.height = height
+		self.defaultfgcolor = defaultfgcolor
+		self.defaultbgcolor = defaultbgcolor
 		self.array = list()
+		self.colorarray = list()
 		self.reset()
 
 	def reset(self): # Blank the surface
 		self.array = [str(" " * self.width) for i in range(self.height)]
+		self.colorarray = [[(self.defaultfgcolor, self.defaultbgcolor) for j in range(self.width)] for i in range(self.height)]
 
 	def calc_slope(self, length, angle): # Calculates how each successive character should be offset from the starting coords
 		offsetlist = list()
@@ -71,15 +75,19 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 				y -= 1
 		return offsetlist
 		
-	def write_single(self, symbol, coords): # Write a single character to a specified position
+	def write_single(self, symbol, coords, fgcolor=None, bgcolor=None): # Write a single character to a specified position
 		x = math.floor(coords[0])
 		y = math.floor(coords[1])
 		symbol = str(str(symbol)[0])
 		if x >= self.width or x < 0 or y >= self.height or y < 0:
 			return
 		self.array[y] = self.array[y][0:x] + symbol + self.array[y][x+1:self.width]
+		if fgcolor != None:
+			self.colorarray[y][x] = (fgcolor, self.colorarray[y][x][1])
+		if bgcolor != None:
+			self.colorarray[y][x] = (self.colorarray[y][x][0], bgcolor)
 	
-	def write_string(self, string, coords, angle=0): # Write a string to the surface. Defaults to right, rotates clockwise
+	def write_string(self, string, coords, angle=0, fgcolor=None, bgcolor=None): # Write a string to the surface. Defaults to right, rotates clockwise
 		x = coords[0]
 		y = coords[1]
 		string = str(string)
@@ -87,15 +95,15 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		for i in range(len(string)):
 			xoff = offsetlist[i][0]
 			yoff = offsetlist[i][1]
-			self.write_single(string[i], (x+xoff, y+yoff))
+			self.write_single(string[i], (x+xoff, y+yoff), fgcolor, bgcolor)
 
-	def write_line(self, symbol, length, coords, angle=0, variablelength = False): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
+	def write_line(self, symbol, length, coords, angle=0, variablelength = False, fgcolor=None, bgcolor=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
 		symbol = str(str(symbol)[0])
 		if variablelength:
 			length = round(length * math.cos(math.radians(((angle + 45) % 90)-45)))
-		self.write_string(symbol * length, coords, angle)
+		self.write_string(symbol * length, coords, angle, fgcolor, bgcolor)
 	
-	def write_rectangle(self, symbol, coords, width, height, angle=0, fromcenter=False, filled=False, filledsymbol=" "): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
+	def write_rectangle(self, symbol, coords, width, height, angle=0, fromcenter=False, filled=False, filledsymbol=" ", fgcolor=None, bgcolor=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
 		symbol = str(str(symbol)[0])
 		filledsymbol = str(str(filledsymbol)[0])
 		if fromcenter:
@@ -111,17 +119,17 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		
 		if filled:
 			for i in range(height):
-				self.write_line(filledsymbol, width, (coords[0] + leftedgeoffsets[i][0], coords[1] + leftedgeoffsets[i][1]), angle) # Draw a line parallel to the top edge from each point on the left edge 
+				self.write_line(filledsymbol, width, (coords[0] + leftedgeoffsets[i][0], coords[1] + leftedgeoffsets[i][1]), angle, fgcolor = fgcolor, bgcolor = bgcolor) # Draw a line parallel to the top edge from each point on the left edge 
 				a = leftedgeoffsets[0][0]
 				b = leftedgeoffsets[i][0] + math.copysign(1, topedgeoffsets[-1][0])
 				c = leftedgeoffsets[-1][0]
 				if (a <= b <= c) or (c <= b <= a):
-					self.write_line(filledsymbol, width-1, (coords[0] + b, coords[1] + leftedgeoffsets[i][1]), angle) # Draw extra lines offset by one X in the direction the top edge is going to fill gaps at angles
+					self.write_line(filledsymbol, width-1, (coords[0] + b, coords[1] + leftedgeoffsets[i][1]), angle, fgcolor = fgcolor, bgcolor = bgcolor) # Draw extra lines offset by one X in the direction the top edge is going to fill gaps at angles
 		
-		self.write_line(symbol, width, coords, angle) # Top
-		self.write_line(symbol, height, coords, angle+90) # Left
-		self.write_line(symbol, width, bottomleftcorner, angle) # Bottom
-		self.write_line(symbol, height, toprightcorner, angle+90) # Right
+		self.write_line(symbol, width, coords, angle, fgcolor = fgcolor, bgcolor = bgcolor) # Top
+		self.write_line(symbol, height, coords, angle+90, fgcolor = fgcolor, bgcolor = bgcolor) # Left
+		self.write_line(symbol, width, bottomleftcorner, angle, fgcolor = fgcolor, bgcolor = bgcolor) # Bottom
+		self.write_line(symbol, height, toprightcorner, angle+90, fgcolor = fgcolor, bgcolor = bgcolor) # Right
 	
 	def write_surface(self, inputarray, coords, angle=0, fromcenter=False): # Write a different surface onto this one
 		inputwidth = inputarray.width
@@ -131,9 +139,11 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 			fromcenteroffsetup = self.calc_slope(inputheight/2, angle+270)[-1]
 			fromcenteroffset = (fromcenteroffsetleft[0] + fromcenteroffsetup[0], fromcenteroffsetleft[1] + fromcenteroffsetup[1])
 			coords = (coords[0] + fromcenteroffset[0], coords[1] + fromcenteroffset[1])
+		topedgeoffsets = self.calc_slope(inputwidth, angle)
 		leftedgeoffsets = self.calc_slope(inputheight, angle+90)
 		for i in range(inputheight):
-			self.write_string(inputarray.array[i], (coords[0] + leftedgeoffsets[i][0], coords[1] + leftedgeoffsets[i][1]), angle)
+			for j in range(inputwidth):
+				self.write_single(inputarray.array[i][j], (coords[0] + topedgeoffsets[j][0] + leftedgeoffsets[i][0], coords[1] + topedgeoffsets[j][1] + leftedgeoffsets[i][1]), inputarray.colorarray[i][j][0], inputarray.colorarray[i][j][1])
 		
 
 	def draw(self): # Draw the surface to the terminal
@@ -143,23 +153,34 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		cls()
 		sys.stdout.write(drawstring)
 	
-	def drawPygame(self,destinationSurface, position = (0, 0), fgcolor = (255, 255, 255), bgcolor = (0, 0, 0)): # Draw the surface to a given Pygame surface
+	def drawPygame(self,destinationSurface, position = (0, 0)): # Draw the surface to a given Pygame surface
 		surface = pygame.Surface((self.width * fontsize[0], self.height * fontsize[1]))
-		for i in range(len(self.array)):
-			font.render_to(surface, (0, i * fontsize[1]), self.array[i], fgcolor=fgcolor, bgcolor=bgcolor)
+		for i in reversed(range(self.height)):
+			for j in range(self.width):
+				if self.array[i][j] != " ":
+					charmetrics = font.get_metrics(self.array[i][j])[0]
+					charactersurface = pygame.Surface((fontsize[0], fontsize[1] - min(charmetrics[2], 0)), SRCALPHA) # Generate surface the size of a character
+				else:
+					charactersurface = pygame.Surface((fontsize[0], fontsize[1]), SRCALPHA) # Generate surface the size of a character
+				charactersurface.fill(self.colorarray[i][j][1], pygame.Rect(0, 0, fontsize[0], fontsize[1])) # Fill surface with character BG color, but only the normal bounds. Leave descender area transparent
+				if self.array[i][j] != " ":
+					characterrect = font.get_rect(self.array[i][j])
+					characterrect.midbottom = (fontsize[0]/2, fontsize[1]-charmetrics[2]-1) # Center horizontally and use metrics to place vertically
+					font.render_to(charactersurface, characterrect, text=None, fgcolor=self.colorarray[i][j][0])
+				surface.blit(charactersurface, (j * fontsize[0], i * fontsize[1]))
 		destinationSurface.blit(surface, position)
 
 def main():
 	pygameScreen = pygame.display.set_mode((termwidth * fontsize[0], termheight * fontsize[1]))
 
-	mainscreen = textSurface(termwidth, termheight)
+	mainscreen = textSurface(termwidth, termheight, defaultfgcolor = (100, 255, 100), defaultbgcolor = (30, 80, 30))
 	subscreen = textSurface(20, 10)
 	framenum = 0
 
 	subscreen.write_rectangle("X", (0,0), subscreen.width, subscreen.height)
 	subscreen.write_string("Periods are gaps!", (10 - int(len("Periods are gaps!")/2), 5))
 
-	testangle = 0
+	testangle = 45
 
 	while True:
 		for event in pygame.event.get():
@@ -173,21 +194,22 @@ def main():
 
 
 		mainscreen.write_rectangle("A", (20, 15), 7, 5, testangle, fromcenter=True)
-		mainscreen.write_rectangle("F", (35, 15), 9, 7, testangle, fromcenter=True, filled=True, filledsymbol=".")
+		mainscreen.write_rectangle("F", (35, 15), 9, 7, testangle, fromcenter=True, filled=True, filledsymbol=".", fgcolor=(100, 100, 255), bgcolor=(50, 50, 120))
 		mainscreen.write_line("B", 14, (termwidth-20, 15), testangle, variablelength=True)
 		#mainscreen.write_string("ANGLES!", (60, 15), testangle)
 		mainscreen.write_rectangle("F", (60, 15), 20, 10, testangle, fromcenter=True, filled=True, filledsymbol=".")
 		mainscreen.write_surface(subscreen, (60,15), testangle, fromcenter=True)
+		mainscreen.write_string("-_-_-", (10, 5), fgcolor=(255, 100, 100), bgcolor=(120, 50, 50))
 		
 
-		mainscreen.draw()
+		#mainscreen.draw()
 
 		pygameScreen.fill((0, 0, 0))
-		mainscreen.drawPygame(pygameScreen, fgcolor = (100, 255, 100), bgcolor = (30, 80, 30))
+		mainscreen.drawPygame(pygameScreen)
 		pygame.display.flip()
 
 		time.sleep(.1)
-		testangle += 5
+		#testangle += 5
 		framenum += 1
 
 if __name__ == '__main__':
