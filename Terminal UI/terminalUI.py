@@ -6,15 +6,25 @@ from pygame.locals import *
 import pygame.freetype
 
 pygame.init()
-font = pygame.freetype.Font("freefont-20120503\FreeMono.otf", 16)
+font = pygame.freetype.Font("freefont-20120503\FreeMono.otf", 16) # https://www.fileformat.info/info/unicode/font/freemono/grid.htm <- Grid of supported characters
 font.strong = True
 fontsize = (10,16)
+
+fallbackfonts = list()
+fallbackfonts.append(pygame.freetype.Font("freefont-20120503\FreeSans.otf", 16)) # https://www.fileformat.info/info/unicode/font/freeserif/grid.htm <- Grid of supported characters
+fallbackfonts.append(pygame.freetype.Font("freefont-20120503\FreeSerif.otf", 16)) # https://www.fileformat.info/info/unicode/font/freeserif/grid.htm <- Grid of supported characters
+for fallbackfont in fallbackfonts:
+	fallbackfont.strong = True
 
 def setfont(newfont, newsize):
 	global font
 	global fontsize
 	font = newfont
 	fontsize = newsize
+
+def setfallbackfonts(newfonts):
+	global fallbackfonts
+	fallbackfonts = newfonts
 
 newline = chr(10)
 
@@ -158,15 +168,27 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		surface = pygame.Surface((self.width * fontsize[0], self.height * fontsize[1]))
 		for i in reversed(range(self.height)):
 			for j in range(self.width):
-				if self.array[i][j] != " ":
-					charmetrics = font.get_metrics(self.array[i][j])[0]
+				charactertodraw = self.array[i][j]
+				currentfont = None
+				if charactertodraw == " " or font.get_metrics(charactertodraw)[0] != None:
+					currentfont = font
+				else:
+					for fallbackfont in fallbackfonts:
+						if fallbackfont.get_metrics(charactertodraw)[0] != None:
+							currentfont = fallbackfont
+							break
+				if currentfont == None:
+					charactertodraw = " "
+					currentfont = font
+				if charactertodraw != " ":
+					charmetrics = currentfont.get_metrics(charactertodraw)[0]
 					charactersurface = pygame.Surface((fontsize[0], fontsize[1] - min(charmetrics[2], 0)), SRCALPHA) # Generate surface the size of a character
 				else:
 					charactersurface = pygame.Surface((fontsize[0], fontsize[1]), SRCALPHA) # Generate surface the size of a character
 				charactersurface.fill(self.colorarray[i][j][1], pygame.Rect(0, 0, fontsize[0], fontsize[1])) # Fill surface with character BG color, but only the normal bounds. Leave descender area transparent
-				if self.array[i][j] != " ":
-					characterrect = font.get_rect(self.array[i][j])
+				if charactertodraw != " ":
+					characterrect = currentfont.get_rect(charactertodraw)
 					characterrect.midbottom = (fontsize[0]/2, fontsize[1]-charmetrics[2]-1) # Center horizontally and use metrics to place vertically
-					font.render_to(charactersurface, characterrect, text=None, fgcolor=self.colorarray[i][j][0])
+					currentfont.render_to(charactersurface, characterrect, text=None, fgcolor=self.colorarray[i][j][0])
 				surface.blit(charactersurface, (j * fontsize[0], i * fontsize[1]))
 		destinationSurface.blit(surface, position)
