@@ -19,9 +19,6 @@ newline = chr(10)
 blank = " "
 fullblock = chr(9608)
 
-def cls(): # Clears terminals
-    os.system('cls' if os.name=='nt' else 'clear')
-
 class textSurface: # Similar in concept to a Pygame surface but with text instead of pixels
 	def __init__(self, width, height, defaultfgcolor = (255, 255, 255), defaultbgcolor = (0, 0, 0)):
 		self.width = width
@@ -151,7 +148,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		drawstring = ""
 		for row in self.array:
 			drawstring += newline + row
-		cls()
+		os.system('cls' if os.name=='nt' else 'clear')
 		sys.stdout.write(drawstring)
 	
 	def drawPygame(self,destinationSurface, position = (0, 0)): # Draw the surface to a given Pygame surface
