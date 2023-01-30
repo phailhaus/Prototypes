@@ -7,7 +7,8 @@ import pygame.freetype
 
 pygame.init()
 font = pygame.freetype.Font("freefont-20120503\FreeMono.otf", 16)
-fontsize = (9,16)
+font.strong = True
+fontsize = (10,16)
 
 def setfont(newfont, newsize):
 	global font

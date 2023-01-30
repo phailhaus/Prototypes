@@ -10,11 +10,11 @@ pygame.init()
 termwidth = 120
 termheight = 30
 
-#font = pygame.freetype.SysFont("Consolas", 16)
-font = pygame.freetype.Font("freefont-20120503\FreeMonoBold.otf", 16)
-fontsize = (9, 16) # Pygame window is (termwidth * fontsize[0], termheight * fontsize[1]). With antiailiased Consolas at 16, this should be (9, 16) 
+#font = pygame.freetype.Font("freefont-20120503\FreeMono.otf", 16)
+#font.strong = True
+fontsize = terminalUI.fontsize # Pygame window is (termwidth * fontsize[0], termheight * fontsize[1]). 
 
-terminalUI.setfont(font, fontsize)
+#terminalUI.setfont(font, fontsize)
 
 fullblock = chr(9608)
 
@@ -28,7 +28,7 @@ def main():
 	subscreen.write_rectangle("X", (0,0), subscreen.width, subscreen.height)
 	subscreen.write_string("Periods are gaps!", (10 - int(len("Periods are gaps!")/2), 5))
 
-	testangle = 45
+	testangle = 0
 
 	while True:
 		for event in pygame.event.get():
@@ -57,7 +57,7 @@ def main():
 		pygame.display.flip()
 
 		time.sleep(.1)
-		#testangle += 5
+		testangle += 5
 		framenum += 1
 
 if __name__ == '__main__':
