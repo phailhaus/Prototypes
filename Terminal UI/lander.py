@@ -78,7 +78,7 @@ def write_landerstats(screen, lander):
 	landerangle = math.degrees(lander.body.angle)
 	landerav = math.degrees(lander.body.angular_velocity)
 	landervel = lander.body.velocity
-	line = 1
+	line = 2
 	screen.write_string(f"Angle: {round(landerangle)}{chr(176)}", (2,line))
 	line += 1
 	screen.write_string(f"A Vel: {round(landerav)}/sec", (2,line))
@@ -92,7 +92,7 @@ def write_landerstats(screen, lander):
 def main():
 	pygameScreen = pygame.display.set_mode((termwidth * fontsize[0], termheight * fontsize[1]))
 	mainscreen = terminalUI.textSurface(termwidth, termheight)
-	uiscreen = terminalUI.textSurface(20, 7, defaultfgcolor = (100, 255, 100), defaultbgcolor = (30, 80, 30))
+	uiscreen = terminalUI.textSurface(18, 8, defaultfgcolor = (100, 255, 100), defaultbgcolor = (30, 80, 30))
 	space = pymunk.Space()
 	space.gravity = (0.0, 200.0)
 	lines = add_environment(space)
