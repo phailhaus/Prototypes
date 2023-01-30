@@ -139,6 +139,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 			fromcenteroffsetup = self.calc_slope(inputheight/2, angle+270)[-1]
 			fromcenteroffset = (fromcenteroffsetleft[0] + fromcenteroffsetup[0], fromcenteroffsetleft[1] + fromcenteroffsetup[1])
 			coords = (coords[0] + fromcenteroffset[0], coords[1] + fromcenteroffset[1])
+		self.write_rectangle(" ", coords, inputwidth, inputheight, angle, filled=True, fgcolor=inputarray.defaultfgcolor, bgcolor=inputarray.defaultbgcolor)
 		topedgeoffsets = self.calc_slope(inputwidth, angle)
 		leftedgeoffsets = self.calc_slope(inputheight, angle+90)
 		for i in range(inputheight):
