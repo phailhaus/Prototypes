@@ -99,6 +99,8 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		symbol = str(str(symbol)[0])
 		if variablelength:
 			length = round(length * math.cos(math.radians(((angle + 45) % 90)-45)))
+		else:
+			length = round(length)
 		self.write_string(symbol * length, coords, angle, fgcolor, bgcolor)
 	
 	def write_rectangle(self, symbol, coords, width, height, angle=0, fromcenter=False, filled=False, filledsymbol=" ", fgcolor=None, bgcolor=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
