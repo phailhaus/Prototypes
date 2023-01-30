@@ -141,7 +141,7 @@ class Lander:
 def main():
 	pygameScreen = pygame.display.set_mode((termwidth * fontsize[0], termheight * fontsize[1]))
 	mainscreen = terminalUI.textSurface(termwidth, termheight)
-	uiscreen = terminalUI.textSurface(18, 8, defaultfgcolor = (100, 255, 100), defaultbgcolor = (30, 80, 30))
+	uiscreen = terminalUI.textSurface(20, 8, defaultfgcolor = (100, 255, 100), defaultbgcolor = (30, 80, 30))
 	space = pymunk.Space()
 	space.gravity = (0.0, 200.0)
 	lines = add_environment(space)
