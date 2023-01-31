@@ -6,13 +6,14 @@ from pygame.locals import *
 import pygame.freetype
 
 pygame.init()
-font = pygame.freetype.Font("freefont-20120503\FreeMono.otf", 16) # https://www.fileformat.info/info/unicode/font/freemono/grid.htm <- Grid of supported characters
+fontdir = "freefont-20120503"
+font = pygame.freetype.Font(os.path.join(fontdir, "FreeMono.otf"), 16) # https://www.fileformat.info/info/unicode/font/freemono/grid.htm <- Grid of supported characters
 font.strong = True
 fontsize = (10,16)
 
 fallbackfonts = list()
-fallbackfonts.append(pygame.freetype.Font("freefont-20120503\FreeSans.otf", 16)) # https://www.fileformat.info/info/unicode/font/freeserif/grid.htm <- Grid of supported characters
-fallbackfonts.append(pygame.freetype.Font("freefont-20120503\FreeSerif.otf", 16)) # https://www.fileformat.info/info/unicode/font/freeserif/grid.htm <- Grid of supported characters
+fallbackfonts.append(pygame.freetype.Font(os.path.join(fontdir, "FreeSans.otf"), 16)) # https://www.fileformat.info/info/unicode/font/freeserif/grid.htm <- Grid of supported characters
+fallbackfonts.append(pygame.freetype.Font(os.path.join(fontdir, "FreeSerif.otf"), 16)) # https://www.fileformat.info/info/unicode/font/freeserif/grid.htm <- Grid of supported characters
 for fallbackfont in fallbackfonts:
 	fallbackfont.strong = True
 
