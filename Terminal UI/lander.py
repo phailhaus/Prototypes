@@ -8,6 +8,7 @@ import pygame.freetype
 import terminalUI
 import pymunk
 import pymunk.pygame_util
+import random
 
 pygame.init()
 
@@ -53,11 +54,18 @@ def add_environment(space):
 	body = pymunk.Body(body_type = pymunk.Body.STATIC)
 	body.position = (screenwidth/2, screenheight/2)
 	lines = []
-	lines.append(pymunk.Segment(body, (-(screenwidth/2) + 50, (screenheight/2) - 50), ((screenwidth/2) - 50, (screenheight/2) - 50), 10)) # Bottom
+	lastpoint = (-(screenwidth / 2), -(random.random() * 200) - 25 + (screenheight / 2))
+	thispoint = (0, 0)
+	for i in range(8):
+		thispoint = ((screenwidth/7) * (i) - (screenwidth / 2), -(random.random() * 200) - 25 + (screenheight / 2))
+		lines.append(pymunk.Segment(body, lastpoint, thispoint, 10)) # Bottom
+		lastpoint = thispoint
 	
 	space.add(body)
 	
 	for line in lines:
+		line.elasticity = .5
+		line.friction = .9
 		space.add(line)
 
 	return lines
@@ -123,6 +131,8 @@ class Lander:
 		self.startingfuel = 1
 		self.fuel = self.startingfuel
 		self.defaultpower = 600
+		self.shape.elasticity = .5
+		self.shape.friction = .9
 	
 	def fire_engine(self, direction=(0,-1), power=None):
 		if self.fuel <= 0:
@@ -169,7 +179,7 @@ def main():
 		mainscreen.write_rectangle(fullblock, (0, 0), termwidth, termheight, fgcolor = (100, 255, 100), bgcolor = (30, 80, 30))
 		uiscreen.write_rectangle(fullblock, (0, 0), uiscreen.width, uiscreen.height)
 		write_lines(mainscreen, lines, fullblock)
-		write_lander(mainscreen, lander.shape)
+		write_lander(mainscreen, lander.shape, fgcolor=(255, 255, 255))
 		write_landerstats(uiscreen, lander)
 		mainscreen.write_surface(uiscreen, (0,0))
 
