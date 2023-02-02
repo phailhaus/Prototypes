@@ -123,7 +123,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 			length = round(length)
 		self.write_string(symbol * length, coords, angle, fgcolor, bgcolor, modifiers=modifiers)
 	
-	def write_rectangle(self, symbol, coords, width, height, angle=0, fromcenter=False, filled=False, filledsymbol=" ", fgcolor=None, bgcolor=None, modifiers=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
+	def write_rectangle(self, symbol, coords, width, height, angle=0, fromcenter=False, filled=False, filledsymbol=" ", fgcolor=None, bgcolor=None, modifiers=None, fillmodifiers=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
 		symbol = str(str(symbol)[0])
 		filledsymbol = str(str(filledsymbol)[0])
 		if fromcenter:
@@ -139,12 +139,12 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		
 		if filled:
 			for i in range(height):
-				self.write_line(filledsymbol, width, (coords[0] + leftedgeoffsets[i][0], coords[1] + leftedgeoffsets[i][1]), angle, fgcolor = fgcolor, bgcolor = bgcolor) # Draw a line parallel to the top edge from each point on the left edge 
+				self.write_line(filledsymbol, width, (coords[0] + leftedgeoffsets[i][0], coords[1] + leftedgeoffsets[i][1]), angle, fgcolor = fgcolor, bgcolor = bgcolor, modifiers=fillmodifiers) # Draw a line parallel to the top edge from each point on the left edge 
 				a = leftedgeoffsets[0][0]
 				b = leftedgeoffsets[i][0] + math.copysign(1, topedgeoffsets[-1][0])
 				c = leftedgeoffsets[-1][0]
 				if (a <= b <= c) or (c <= b <= a):
-					self.write_line(filledsymbol, width-1, (coords[0] + b, coords[1] + leftedgeoffsets[i][1]), angle, fgcolor = fgcolor, bgcolor = bgcolor) # Draw extra lines offset by one X in the direction the top edge is going to fill gaps at angles
+					self.write_line(filledsymbol, width-1, (coords[0] + b, coords[1] + leftedgeoffsets[i][1]), angle, fgcolor = fgcolor, bgcolor = bgcolor, modifiers=fillmodifiers) # Draw extra lines offset by one X in the direction the top edge is going to fill gaps at angles
 		
 		self.write_line(symbol, width, coords, angle, fgcolor = fgcolor, bgcolor = bgcolor, modifiers=modifiers) # Top
 		self.write_line(symbol, height, coords, angle+90, fgcolor = fgcolor, bgcolor = bgcolor, modifiers=modifiers) # Left
