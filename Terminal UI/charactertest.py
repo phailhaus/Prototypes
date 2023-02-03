@@ -10,8 +10,8 @@ import random
 
 pygame.init()
 
-termwidth = 180
-termheight = 60
+termwidth = 150
+termheight = 40
 
 framerate = 60
 
