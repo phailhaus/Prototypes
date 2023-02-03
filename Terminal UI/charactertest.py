@@ -40,10 +40,10 @@ def genstrings(screennum):
 		thisstring = ""
 		rowstart = screenstart + (i * termwidth)
 		for j in range(termwidth):
-			if rowstart+j < 55296 or rowstart+j > 57343:
-				thisstring += chr(rowstart+j)
-			else:
-				thisstring += " "
+			#if rowstart+j < 55296 or rowstart+j > 57343:
+			thisstring += chr(rowstart+j)
+			#else:
+			#	thisstring += " "
 		strings.append(thisstring)
 	print(f"Screen {screennum}: {screennum*termwidth*termheight} - {(screennum+1)*termwidth*termheight}")
 	return strings

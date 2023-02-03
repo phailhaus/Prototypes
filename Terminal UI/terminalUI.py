@@ -9,6 +9,7 @@ pygame.init()
 fontdir = "freefont-20120503"
 font = pygame.freetype.Font(os.path.join(fontdir, "FreeMono.otf"), 16) # https://www.fileformat.info/info/unicode/font/freemono/grid.htm <- Grid of supported characters
 font.strong = True
+font.ucs4 = True
 fontsize = (10,16)
 
 fallbackfonts = list()
@@ -16,6 +17,7 @@ fallbackfonts.append(pygame.freetype.Font(os.path.join(fontdir, "FreeSans.otf"),
 fallbackfonts.append(pygame.freetype.Font(os.path.join(fontdir, "FreeSerif.otf"), 16)) # https://www.fileformat.info/info/unicode/font/freeserif/grid.htm <- Grid of supported characters
 for fallbackfont in fallbackfonts:
 	fallbackfont.strong = True
+	fallbackfont.ucs4 = True
 
 def setfont(newfont, newsize):
 	global font
