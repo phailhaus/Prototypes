@@ -199,10 +199,12 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 					charactertodraw = " "
 					currentfont = font
 				if charactertodraw != " ":
-					charmetrics = currentfont.get_metrics(charactertodraw)[0]
+					charmetric = currentfont.get_metrics(charactertodraw)[0][2]
+					if charmetric > 2 ** 31:
+						charmetric -= 2 ** 32
 					charactersurface = pygame.Surface((fontsize[0] * 2, fontsize[1] * 2), SRCALPHA) # Generate surface the size of a character * 2 in each direction
 					characterrect = currentfont.get_rect(charactertodraw)
-					characterrect.midbottom = (fontsize[0], (fontsize[1] * 1.5) - charmetrics[2]) # Center horizontally and use metrics to place vertically
+					characterrect.midbottom = (fontsize[0], (fontsize[1] * 1.5) - charmetric) # Center horizontally and use metrics to place vertically
 					currentfont.render_to(charactersurface, characterrect, text=None, fgcolor=self.colorarray[i][j][0])
 					flip_x, flip_y = False, False
 					if self.modifierarray[i][j] != None:
