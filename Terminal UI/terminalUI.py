@@ -87,6 +87,20 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 				x += slope
 				y -= 1
 		return offsetlist
+	
+	def calc_slope_destination(self, source=(0,0), destination=(0,0), length=1): # Feeds calc_slope with angle and length based on source and destination coords
+		if source != destination:
+			dx = destination[0] - source[0]
+			dy = destination[1] - source[1]
+			deg0 = pygame.math.Vector2(1, 0)
+			targetvec = pygame.math.Vector2(dx, dy)
+			angle = deg0.angle_to(targetvec)
+			length = max(max(abs(dx), abs(dy)) + 1, length)
+			offsetlist = self.calc_slope(length, angle)
+		else:
+			offsetlist = list()
+			offsetlist.append((0,0))
+		return offsetlist
 		
 	def write_single(self, symbol, coords, fgcolor=None, bgcolor=None, modifiers=None): # Write a single character to a specified position
 		x = math.floor(coords[0])
@@ -104,11 +118,14 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		if type(modifiers) == tuple:
 			self.modifierarray[y][x] = modifiers
 	
-	def write_string(self, string, coords, angle=0, fgcolor=None, bgcolor=None, modifiers=None): # Write a string to the surface. Defaults to right, rotates clockwise
+	def write_string(self, string, coords, angle=0, destcoords = None, fgcolor=None, bgcolor=None, modifiers=None): # Write a string to the surface. Defaults to right, rotates clockwise
 		x = coords[0]
 		y = coords[1]
 		string = str(string)
-		offsetlist = self.calc_slope(len(string), angle)
+		if destcoords == None:
+			offsetlist = self.calc_slope(len(string), angle)
+		elif destcoords != None:
+			offsetlist = self.calc_slope_destination(coords, destcoords, len(string))
 		thismod = modifiers
 		for i in range(len(string)):
 			xoff = offsetlist[i][0]
@@ -117,13 +134,22 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 				thismod = modifiers[i]
 			self.write_single(string[i], (x+xoff, y+yoff), fgcolor, bgcolor, modifiers=thismod)
 
-	def write_line(self, symbol, length, coords, angle=0, variablelength = False, fgcolor=None, bgcolor=None, modifiers=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
+	def write_line(self, symbol, length = None, coords = (0,0), angle=0, destcoords = None, variablelength = False, fgcolor=None, bgcolor=None, modifiers=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
 		symbol = str(str(symbol)[0])
-		if variablelength:
-			length = round(length * math.cos(math.radians(((angle + 45) % 90)-45)))
+		if length != None:
+			if variablelength:
+				length = round(length * math.cos(math.radians(((angle + 45) % 90)-45)))
+			else:
+				length = round(length)
+		elif length == None and destcoords != None:
+			dx = destcoords[0] - coords[0]
+			dy = destcoords[1] - coords[1]
+			length = math.floor(max(abs(dx), abs(dy)) + 1)
 		else:
-			length = round(length)
-		self.write_string(symbol * length, coords, angle, fgcolor, bgcolor, modifiers=modifiers)
+			length = 1
+
+		self.write_string(symbol * length, coords, angle, destcoords, fgcolor, bgcolor, modifiers=modifiers)
+
 	
 	def write_rectangle(self, symbol, coords, width, height, angle=0, fromcenter=False, filled=False, filledsymbol=" ", fgcolor=None, bgcolor=None, modifiers=None, fillmodifiers=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
 		symbol = str(str(symbol)[0])
