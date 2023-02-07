@@ -19,13 +19,13 @@ for fallbackfont in fallbackfonts:
 	fallbackfont.strong = True
 	fallbackfont.ucs4 = True
 
-def setfont(newfont, newsize):
+def setfont(newfont, newsize): # Function to override default font with a new one
 	global font
 	global fontsize
 	font = newfont
 	fontsize = newsize
 
-def setfallbackfonts(newfonts):
+def setfallbackfonts(newfonts): # Function to override default fallback font list with a new one. Must be a list.
 	global fallbackfonts
 	fallbackfonts = newfonts
 
@@ -118,7 +118,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		if type(modifiers) == tuple:
 			self.modifierarray[y][x] = modifiers
 	
-	def write_string(self, string, coords, angle=0, destcoords = None, fgcolor=None, bgcolor=None, modifiers=None): # Write a string to the surface. Defaults to right, rotates clockwise
+	def write_string(self, string, coords, angle=0, destcoords = None, fgcolor=None, bgcolor=None, modifiers=None): # Write a string to the surface. Defaults to right, rotates clockwise. If destcoords is set, overrides angle with the direction of destcoords from coords
 		x = coords[0]
 		y = coords[1]
 		string = str(string)
@@ -134,7 +134,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 				thismod = modifiers[i]
 			self.write_single(string[i], (x+xoff, y+yoff), fgcolor, bgcolor, modifiers=thismod)
 
-	def write_line(self, symbol, length = None, coords = (0,0), angle=0, destcoords = None, variablelength = False, fgcolor=None, bgcolor=None, modifiers=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line
+	def write_line(self, symbol, length = None, coords = (0,0), angle=0, destcoords = None, variablelength = False, fgcolor=None, bgcolor=None, modifiers=None): # Write a line of the same character. If variablelength is off, writes length characters, like writestring. If variablelength is on, reduces number of characters at angles to give similar length to a cardinal line. If destcoords is set, overrides angle with the direction of destcoords from coords. Can calculate length to destination, but takes length if given
 		symbol = str(str(symbol)[0])
 		if length != None:
 			if variablelength:
