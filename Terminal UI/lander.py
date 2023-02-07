@@ -77,18 +77,24 @@ def write_lines(screen, lines, symbol, fgcolor=None, bgcolor=None):
 		startingpoint = (startingpoint[0]/fontsize[0], startingpoint[1]/fontsize[1])
 		endingpoint = body.position + line.b.rotated(body.angle)
 		endingpoint = (endingpoint[0]/fontsize[0], endingpoint[1]/fontsize[1])
-		linevector = pymunk.Vec2d((endingpoint[0]-startingpoint[0]),(endingpoint[1]-startingpoint[1]))
-		screen.write_line(symbol, linevector.length, startingpoint, angle=linevector.angle_degrees, fgcolor=fgcolor, bgcolor=bgcolor)
+		screen.write_line(symbol, coords=startingpoint, destcoords=endingpoint, fgcolor=fgcolor, bgcolor=bgcolor)
 	
 def write_lander(screen, lander, fgcolor=None, bgcolor=None):
 	landerangle = math.degrees(lander.body.angle)
 	symbol = triangles[round(landerangle/45) % 8]
 	landerposition = lander.body.position
 	landerposition = (round(landerposition[0]/fontsize[0]), round(landerposition[1]/fontsize[1]))
-	for v in lander.get_vertices():
-		x,y = v.rotated(lander.body.angle) + lander.body.position
-		vertex = (round(x/fontsize[0]), round(y/fontsize[1]))
-		screen.write_single(symbol, vertex, fgcolor=fgcolor, bgcolor=bgcolor)
+	vertices = lander.get_vertices()
+	for i in range(len(vertices)):
+		x1,y1 = vertices[i].rotated(lander.body.angle) + lander.body.position
+		startingcoord = (round(x1/fontsize[0]), round(y1/fontsize[1]))
+		if i < len(vertices)-1:
+			x2,y2 = vertices[i+1].rotated(lander.body.angle) + lander.body.position
+			endingcoord = (round(x2/fontsize[0]), round(y2/fontsize[1]))
+		else:
+			x2,y2 = vertices[0].rotated(lander.body.angle) + lander.body.position
+			endingcoord = (round(x2/fontsize[0]), round(y2/fontsize[1]))
+		screen.write_line(symbol, coords = startingcoord, destcoords = endingcoord, fgcolor=fgcolor, bgcolor=bgcolor)
 	screen.write_single(symbol, landerposition, fgcolor=fgcolor, bgcolor=bgcolor)
 	screen.write_string(str(round(landerangle)), (2,2))
 
@@ -124,7 +130,7 @@ class Lander:
 	def __init__(self, space):
 		self.space = space
 		self.body = pymunk.Body()
-		self.shape = pymunk.Poly.create_box(body=self.body, size=(fontsize[0] * 4, fontsize[1] * 4), radius=1)
+		self.shape = pymunk.Poly.create_box(body=self.body, size=(fontsize[0] * 6, fontsize[1] * 6), radius=1)
 		self.shape.density = 1
 		self.space.add(self.body, self.shape)
 		self.body.position = (screenwidth/2, 10)
