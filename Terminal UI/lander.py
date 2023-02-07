@@ -56,8 +56,8 @@ def add_environment(space):
 	lines = []
 	lastpoint = (-(screenwidth / 2), -(random.random() * 200) - 25 + (screenheight / 2))
 	thispoint = (0, 0)
-	for i in range(8):
-		thispoint = ((screenwidth/7) * (i) - (screenwidth / 2), -(random.random() * 200) - 25 + (screenheight / 2))
+	for i in range(12):
+		thispoint = ((screenwidth/11) * (i) - (screenwidth / 2), -(random.random() * 200) - 25 + (screenheight / 2))
 		lines.append(pymunk.Segment(body, lastpoint, thispoint, 10)) # Bottom
 		lastpoint = thispoint
 	
@@ -84,19 +84,25 @@ def write_lander(screen, lander, fgcolor=None, bgcolor=None):
 	symbol = triangles[round(landerangle/45) % 8]
 	landerposition = lander.body.position
 	landerposition = (round(landerposition[0]/fontsize[0]), round(landerposition[1]/fontsize[1]))
-	vertices = lander.get_vertices()
+	vertices = lander.vertices
 	for i in range(len(vertices)):
-		x1,y1 = vertices[i].rotated(lander.body.angle) + lander.body.position
-		startingcoord = (round(x1/fontsize[0]), round(y1/fontsize[1]))
+		startingvector = pygame.math.Vector2(vertices[i]).rotate_rad(lander.body.angle)
+		startingcoord = (round(startingvector[0]/fontsize[0]) + landerposition[0], round(startingvector[1]/fontsize[1]) + landerposition[1])
 		if i < len(vertices)-1:
-			x2,y2 = vertices[i+1].rotated(lander.body.angle) + lander.body.position
-			endingcoord = (round(x2/fontsize[0]), round(y2/fontsize[1]))
+			endingvector = pygame.math.Vector2(vertices[i+1]).rotate_rad(lander.body.angle)
+			endingcoord = (round(endingvector[0]/fontsize[0]) + landerposition[0], round(endingvector[1]/fontsize[1]) + landerposition[1])
 		else:
-			x2,y2 = vertices[0].rotated(lander.body.angle) + lander.body.position
-			endingcoord = (round(x2/fontsize[0]), round(y2/fontsize[1]))
-		screen.write_line(symbol, coords = startingcoord, destcoords = endingcoord, fgcolor=fgcolor, bgcolor=bgcolor)
+			endingvector = pygame.math.Vector2(vertices[0]).rotate_rad(lander.body.angle)
+			endingcoord = (round(endingvector[0]/fontsize[0]) + landerposition[0], round(endingvector[1]/fontsize[1]) + landerposition[1])
+		screen.write_line(fullblock, coords = startingcoord, destcoords = endingcoord, fgcolor=fgcolor, bgcolor=bgcolor)
+	legverts = lander.legverts
+	for i in range(len(legverts)):
+		startingvector = pygame.math.Vector2(legverts[i][0]).rotate_rad(lander.body.angle)
+		startingcoord = (round(startingvector[0]/fontsize[0]) + landerposition[0], round(startingvector[1]/fontsize[1]) + landerposition[1])
+		endingvector = pygame.math.Vector2(legverts[i][1]).rotate_rad(lander.body.angle)
+		endingcoord = (round(endingvector[0]/fontsize[0]) + landerposition[0], round(endingvector[1]/fontsize[1]) + landerposition[1])
+		screen.write_line(fullblock, coords = startingcoord, destcoords = endingcoord, fgcolor=fgcolor, bgcolor=bgcolor)
 	screen.write_single(symbol, landerposition, fgcolor=fgcolor, bgcolor=bgcolor)
-	screen.write_string(str(round(landerangle)), (2,2))
 
 def write_landerstats(screen, lander):
 	landerangle = math.degrees(lander.body.angle)
@@ -130,15 +136,30 @@ class Lander:
 	def __init__(self, space):
 		self.space = space
 		self.body = pymunk.Body()
-		self.shape = pymunk.Poly.create_box(body=self.body, size=(fontsize[0] * 6, fontsize[1] * 6), radius=1)
-		self.shape.density = 1
-		self.space.add(self.body, self.shape)
+		#self.shape = pymunk.Poly.create_box(body=self.body, size=(fontsize[0] * 6, fontsize[1] * 6), radius=1)
+		self.vertices = [(2,-5),(5,-2),(5,3),(2,3),(1,5),(-1,5),(-2,3),(-5,3),(-5,-2),(-2,-5)]
+		self.legverts = [[(-2,3),(-4,8)],[(2,3),(4,8)]]
+		scale = 15
+		for i in range(len(self.vertices)):
+			self.vertices[i] = (self.vertices[i][0]*scale, self.vertices[i][1]*scale)
+		for i in range(len(self.legverts)):
+			for j in range(len(self.legverts[i])):
+				self.legverts[i][j] = (self.legverts[i][j][0]*scale, self.legverts[i][j][1]*scale)
+		self.shapes = list()
+		self.shapes.append(pymunk.Poly(body=self.body, vertices=self.vertices, radius=1))
+		self.shapes.append(pymunk.Poly(body=self.body, vertices=(self.legverts[0][0], self.legverts[0][1], (self.legverts[0][1][0]-3, self.legverts[0][1][1]), (self.legverts[0][0][0]-3, self.legverts[0][0][1])), radius=1))
+		self.shapes.append(pymunk.Poly(body=self.body, vertices=(self.legverts[1][0], self.legverts[1][1], (self.legverts[1][1][0]+3, self.legverts[1][1][1]), (self.legverts[1][0][0]+3, self.legverts[1][0][1])), radius=1))
+		self.space.add(self.body)
+		for shape in self.shapes:
+			shape.density = 1
+			shape.elasticity = .5
+			shape.friction = .9
+			self.space.add(shape)
 		self.body.position = (screenwidth/2, 10)
 		self.startingfuel = 1
 		self.fuel = self.startingfuel
-		self.defaultpower = 600
-		self.shape.elasticity = .5
-		self.shape.friction = .9
+		self.defaultpower = 1000
+		
 	
 	def fire_engine(self, direction=(0,-1), power=None):
 		if self.fuel <= 0:
@@ -185,7 +206,7 @@ def main():
 		mainscreen.write_rectangle(fullblock, (0, 0), termwidth, termheight, fgcolor = (100, 255, 100), bgcolor = (30, 80, 30))
 		uiscreen.write_rectangle(fullblock, (0, 0), uiscreen.width, uiscreen.height)
 		write_lines(mainscreen, lines, fullblock)
-		write_lander(mainscreen, lander.shape, fgcolor=(255, 255, 255))
+		write_lander(mainscreen, lander, fgcolor=(255, 255, 255))
 		write_landerstats(uiscreen, lander)
 		mainscreen.write_surface(uiscreen, (0,0))
 
