@@ -204,12 +204,12 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 	
 	def drawPygame(self,destinationSurface, position = (0, 0)): # Draw the surface to a given Pygame surface
 		surface = pygame.Surface((self.width * fontsize[0], self.height * fontsize[1]), SRCALPHA)
+		surface.fill(color=self.defaultbgcolor)
 		for i in range(self.height): # Draw background
 			for j in range(self.width):
-				charactertodraw = self.array[i][j]
-				charactersurface = pygame.Surface((fontsize[0], fontsize[1]), SRCALPHA) # Generate surface the size of a character
-				charactersurface.fill(self.colorarray[i][j][1]) # Fill surface with background color
-				surface.blit(charactersurface, (j * fontsize[0], (i * fontsize[1]))) # Draw surface to target cell
+				if self.colorarray[i][j][1] != self.defaultbgcolor:
+					backgroundrect = pygame.Rect((j * fontsize[0], (i * fontsize[1])), (fontsize[0], fontsize[1]))
+					surface.fill(color=self.colorarray[i][j][1], rect=backgroundrect)
 		for i in range(self.height):
 			for j in range(self.width):
 				charactertodraw = self.array[i][j]
