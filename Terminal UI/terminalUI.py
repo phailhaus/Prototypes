@@ -46,7 +46,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		self.reset()
 
 	def reset(self): # Blank the surface
-		self.array = [str(" " * self.width) for i in range(self.height)]
+		self.array = [[" " for j in range(self.width)] for i in range(self.height)]
 		self.colorarray = [[(self.defaultfgcolor, self.defaultbgcolor) for j in range(self.width)] for i in range(self.height)]
 		self.modifierarray = [[None for j in range(self.width)] for i in range(self.height)]
 
@@ -111,7 +111,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		symbol = str(str(symbol)[0])
 		if x >= self.width or x < 0 or y >= self.height or y < 0:
 			return
-		self.array[y] = self.array[y][0:x] + symbol + self.array[y][x+1:self.width]
+		self.array[y][x] = symbol
 		if fgcolor != None:
 			self.colorarray[y][x] = (fgcolor, self.colorarray[y][x][1])
 		if bgcolor != None:
@@ -202,7 +202,9 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 	def draw(self): # Draw the surface to the terminal
 		drawstring = ""
 		for row in self.array:
-			drawstring += newline + row
+			drawstring += newline
+			for symbol in row:
+				drawstring += symbol
 		os.system('cls' if os.name=='nt' else 'clear')
 		sys.stdout.write(drawstring)
 	
