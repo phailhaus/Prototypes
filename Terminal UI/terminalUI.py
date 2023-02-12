@@ -127,7 +127,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 		string = str(string)
 		if destcoords == None:
 			offsetlist = self.calc_slope(len(string), angle)
-		elif destcoords != None:
+		else:
 			offsetlist = self.calc_slope_destination(coords, destcoords, len(string))
 		thismod = modifiers
 		for i in range(len(string)):
@@ -174,7 +174,7 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 				a = leftedgeoffsets[0][0]
 				b = leftedgeoffsets[i][0] + math.copysign(1, topedgeoffsets[-1][0])
 				c = leftedgeoffsets[-1][0]
-				if (a <= b <= c) or (c <= b <= a):
+				if angle % 90 != 0 and ((a <= b <= c) or (c <= b <= a)):
 					self.write_line(filledsymbol, width-1, (coords[0] + b, coords[1] + leftedgeoffsets[i][1]), angle, fgcolor = fgcolor, bgcolor = bgcolor, modifiers=fillmodifiers) # Draw extra lines offset by one X in the direction the top edge is going to fill gaps at angles
 		
 		self.write_line(symbol, width, coords, angle, fgcolor = fgcolor, bgcolor = bgcolor, modifiers=modifiers) # Top
@@ -190,7 +190,8 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 			fromcenteroffsetup = self.calc_slope(inputheight/2, angle+270)[-1]
 			fromcenteroffset = (fromcenteroffsetleft[0] + fromcenteroffsetup[0], fromcenteroffsetleft[1] + fromcenteroffsetup[1])
 			coords = (coords[0] + fromcenteroffset[0], coords[1] + fromcenteroffset[1])
-		self.write_rectangle(" ", coords, inputwidth, inputheight, angle, filled=True, fgcolor=inputarray.defaultfgcolor, bgcolor=inputarray.defaultbgcolor)
+		if angle % 90 != 0:
+			self.write_rectangle(" ", coords, inputwidth, inputheight, angle, filled=True, fgcolor=inputarray.defaultfgcolor, bgcolor=inputarray.defaultbgcolor)
 		topedgeoffsets = self.calc_slope(inputwidth, angle)
 		leftedgeoffsets = self.calc_slope(inputheight, angle+90)
 		for i in range(inputheight):
