@@ -216,9 +216,9 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 					batchwidth += 1
 					batchcolor = thiscolor
 				else:
-					#if batchcolor != self.defaultbgcolor:
-					backgroundrect = pygame.Rect(((j-batchwidth) * fontsize[0], (i * fontsize[1])), (fontsize[0]*batchwidth, fontsize[1]))
-					surface.fill(color=batchcolor, rect=backgroundrect)
+					if batchcolor != self.defaultbgcolor:
+						backgroundrect = pygame.Rect(((j-batchwidth) * fontsize[0], (i * fontsize[1])), (fontsize[0]*batchwidth, fontsize[1]))
+						surface.fill(color=batchcolor, rect=backgroundrect)
 					batchwidth = 1
 					batchcolor = thiscolor
 			if batchwidth > 0:
