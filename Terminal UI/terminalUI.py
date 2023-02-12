@@ -204,12 +204,26 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 	
 	def drawPygame(self,destinationSurface, position = (0, 0)): # Draw the surface to a given Pygame surface
 		surface = pygame.Surface((self.width * fontsize[0], self.height * fontsize[1]), SRCALPHA)
+		surface.fill(color=self.defaultbgcolor)
+		batchwidth = 0
+		batchcolor = None
 		for i in range(self.height): # Draw background
+			batchwidth = 0
+			batchcolor = None
 			for j in range(self.width):
-				charactertodraw = self.array[i][j]
-				charactersurface = pygame.Surface((fontsize[0], fontsize[1]), SRCALPHA) # Generate surface the size of a character
-				charactersurface.fill(self.colorarray[i][j][1]) # Fill surface with background color
-				surface.blit(charactersurface, (j * fontsize[0], (i * fontsize[1]))) # Draw surface to target cell
+				thiscolor = self.colorarray[i][j][1]
+				if batchwidth == 0 or batchcolor == thiscolor: # Start or extend batch if it matches
+					batchwidth += 1
+					batchcolor = thiscolor
+				else: # If it doesn't match, write the previous batch and start a new one
+					if batchcolor != self.defaultbgcolor: 
+						backgroundrect = pygame.Rect(((j-batchwidth) * fontsize[0], (i * fontsize[1])), (fontsize[0]*batchwidth, fontsize[1]))
+						surface.fill(color=batchcolor, rect=backgroundrect)
+					batchwidth = 1
+					batchcolor = thiscolor
+			if batchcolor != self.defaultbgcolor:# End of line, write lingering batch
+				backgroundrect = pygame.Rect(((self.width-batchwidth) * fontsize[0], (i * fontsize[1])), (fontsize[0]*batchwidth, fontsize[1]))
+				surface.fill(color=batchcolor, rect=backgroundrect)
 		for i in range(self.height):
 			for j in range(self.width):
 				charactertodraw = self.array[i][j]
