@@ -12,6 +12,8 @@ import random
 
 pygame.init()
 
+clock = pygame.time.Clock()
+
 termwidth = 120
 termheight = 60
 
@@ -215,7 +217,9 @@ def main():
 		pygame.display.flip()
 		
 
-		time.sleep(1/framerate)
+		#time.sleep(1/framerate)
+		clock.tick(framerate)
+		print(clock.get_fps())
 		framenum += 1
 
 if __name__ == '__main__':
