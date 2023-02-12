@@ -224,35 +224,44 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 			if batchcolor != self.defaultbgcolor:# End of line, write lingering batch
 				backgroundrect = pygame.Rect(((self.width-batchwidth) * fontsize[0], (i * fontsize[1])), (fontsize[0]*batchwidth, fontsize[1]))
 				surface.fill(color=batchcolor, rect=backgroundrect)
+		charactertodraw = None
+		characterfgcolor = None
+		charactermodifiers = None
 		for i in range(self.height):
 			for j in range(self.width):
-				charactertodraw = self.array[i][j]
-				currentfont = None
-				if charactertodraw == " " or font.get_metrics(charactertodraw)[0] != None: # Set font to default if drawing space or if default has character
-					currentfont = font
-				else:
-					for fallbackfont in fallbackfonts: # Cycle through fallbacks to find character
-						if fallbackfont.get_metrics(charactertodraw)[0] != None:
-							currentfont = fallbackfont
-							break
-				if currentfont == None: # Give up, replace character with space
-					charactertodraw = " "
-					currentfont = font
-				if charactertodraw != " ": # Draw nothing if character is space, otherwise draw
-					charmetric = currentfont.get_metrics(charactertodraw)[0][2]
-					if charmetric > 2 ** 31: # Check for unsigned int with rollover
-						charmetric -= 2 ** 32 # Convert to signed int
-					charactersurface = pygame.Surface((fontsize[0] * 2, fontsize[1] * 2), SRCALPHA) # Generate surface the size of a character * 2 in each direction
-					characterrect = currentfont.get_rect(charactertodraw)
-					characterrect.midbottom = (fontsize[0], (fontsize[1] * 1.5) - charmetric) # Center horizontally and use metrics to place vertically
-					currentfont.render_to(charactersurface, characterrect, text=None, fgcolor=self.colorarray[i][j][0]) # Draw character to intermediate surface
-					flip_x, flip_y = False, False
-					if self.modifierarray[i][j] != None:
-						if "mirror_horizontal" in self.modifierarray[i][j] or "mh" in self.modifierarray[i][j]:
-							flip_x = True
-						if "mirror_vertical" in self.modifierarray[i][j] or "mv" in self.modifierarray[i][j]:
-							flip_y = True
-						if flip_x == True or flip_y == True:
-							charactersurface = pygame.transform.flip(charactersurface, flip_x, flip_y) # Mirror the character if needed
-					surface.blit(charactersurface, ((j - .5) * fontsize[0], (i - .5) * fontsize[1])) # Draw to working surface
+				if self.array[i][j] != " ": # Draw nothing if character is space, otherwise draw
+					if self.array[i][j] == charactertodraw and self.colorarray[i][j][0] == characterfgcolor and self.modifierarray[i][j] == charactermodifiers: # If it is exactly the same as the last character drawn, just use the last charactersurface again
+						surface.blit(charactersurface, ((j - .5) * fontsize[0], (i - .5) * fontsize[1])) # Draw to working surface
+					else:
+						charactertodraw = self.array[i][j]
+						characterfgcolor = self.colorarray[i][j][0]
+						charactermodifiers = self.modifierarray[i][j]
+						currentfont = None
+						if font.get_metrics(charactertodraw)[0] != None: # Set font to default if drawing space or if default has character
+							currentfont = font
+						else:
+							for fallbackfont in fallbackfonts: # Cycle through fallbacks to find character
+								if fallbackfont.get_metrics(charactertodraw)[0] != None:
+									currentfont = fallbackfont
+									break
+						if currentfont == None: # Give up, replace character with space
+							charactertodraw = " "
+							currentfont = font
+						if charactertodraw != " ": # Draw nothing if character is space, otherwise draw
+							charmetric = currentfont.get_metrics(charactertodraw)[0][2]
+							if charmetric > 2 ** 31: # Check for unsigned int with rollover
+								charmetric -= 2 ** 32 # Convert to signed int
+							charactersurface = pygame.Surface((fontsize[0] * 2, fontsize[1] * 2), SRCALPHA) # Generate surface the size of a character * 2 in each direction
+							characterrect = currentfont.get_rect(charactertodraw)
+							characterrect.midbottom = (fontsize[0], (fontsize[1] * 1.5) - charmetric) # Center horizontally and use metrics to place vertically
+							currentfont.render_to(charactersurface, characterrect, text=None, fgcolor=characterfgcolor) # Draw character to intermediate surface
+							flip_x, flip_y = False, False
+							if charactermodifiers != None:
+								if "mirror_horizontal" in charactermodifiers or "mh" in charactermodifiers:
+									flip_x = True
+								if "mirror_vertical" in charactermodifiers or "mv" in charactermodifiers:
+									flip_y = True
+								if flip_x == True or flip_y == True:
+									charactersurface = pygame.transform.flip(charactersurface, flip_x, flip_y) # Mirror the character if needed
+							surface.blit(charactersurface, ((j - .5) * fontsize[0], (i - .5) * fontsize[1])) # Draw to working surface
 		destinationSurface.blit(surface, position) # Draw to output surface
