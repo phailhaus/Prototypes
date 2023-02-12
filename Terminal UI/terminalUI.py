@@ -212,19 +212,18 @@ class textSurface: # Similar in concept to a Pygame surface but with text instea
 			batchcolor = None
 			for j in range(self.width):
 				thiscolor = self.colorarray[i][j][1]
-				if batchwidth == 0 or batchcolor == thiscolor:
+				if batchwidth == 0 or batchcolor == thiscolor: # Start or extend batch if it matches
 					batchwidth += 1
 					batchcolor = thiscolor
-				else:
-					if batchcolor != self.defaultbgcolor:
+				else: # If it doesn't match, write the previous batch and start a new one
+					if batchcolor != self.defaultbgcolor: 
 						backgroundrect = pygame.Rect(((j-batchwidth) * fontsize[0], (i * fontsize[1])), (fontsize[0]*batchwidth, fontsize[1]))
 						surface.fill(color=batchcolor, rect=backgroundrect)
 					batchwidth = 1
 					batchcolor = thiscolor
-			if batchwidth > 0:
-				if batchcolor != self.defaultbgcolor:
-					backgroundrect = pygame.Rect(((self.width-batchwidth) * fontsize[0], (i * fontsize[1])), (fontsize[0]*batchwidth, fontsize[1]))
-					surface.fill(color=batchcolor, rect=backgroundrect)
+			if batchcolor != self.defaultbgcolor:# End of line, write lingering batch
+				backgroundrect = pygame.Rect(((self.width-batchwidth) * fontsize[0], (i * fontsize[1])), (fontsize[0]*batchwidth, fontsize[1]))
+				surface.fill(color=batchcolor, rect=backgroundrect)
 		for i in range(self.height):
 			for j in range(self.width):
 				charactertodraw = self.array[i][j]
