@@ -21,6 +21,7 @@ class Branch:
 	def __init__(self, layer = int, length = float, angle = float):
 		self.layer = layer
 		self.vector = pygame.math.Vector2((0, length)).rotate(angle)
+		self.angle = angle
 		self.children = list()
 		self.windimpact = random.uniform(1, 1.5)
 	
@@ -28,13 +29,20 @@ class Branch:
 class Tree:
 	def __init__(self):
 		self.layers = 8 # How many recursive layers should be produced
-		self.splits = 2 # How many new branches should come off each branch
-		self.startinglength = 120 # The length of the first line of the trunk
+		self.splits = 3 # How many new branches should come off each branch
+		self.segments = 5 # How many lines per layer
+		self.segmentcountvariance = 1 # How many segments above or below self.segments to swing randomly
+		self.segmentcountdrop = 2 # How much to reduce segment count each layer
+		self.segmentupwardbend = -.5 # How much of the difference between parent angle and up the segment should turn
+		self.segmentanglevariance = .8 # How much the segment angle should be randomized
+		self.segmentlengthdrop = .0 # Multiplier to segment length compared to parent.
+		self.segmentlengthvariance = 0 # Modifies segment length randomly
+		self.startinglength = 40 # The length of the first line of the trunk
 		self.lengthdrop = .2 # Multiplier applied to parent length when determining child length. The length is multiplied by (1 - self.lengthdrop)
 		self.lengthvariance = .3 # Modifies child length randomly. The length is multiplied by (1 - random.uniform(-self.lengthvariance, self.lengthvariance))
 		self.startingangle = 0 # Angle of the first line.
-		self.bendangle = 70 # Angle branches distribute across
-		self.bendangledrop = .2 # Multiplicitive reduction in bendangle each layer
+		self.bendangle = 50 # Angle branches distribute across
+		self.bendangledrop = -.1 # Multiplicitive reduction in bendangle each layer
 		self.bendanglevariance = .4 # Modifies angle randomly
 		self.bendangleinheritance = 1 # How much of parent angle to inherit. Less than 1 makes branches more upright than their parent, more than 1 makes them more droopy/twisted.
 		self.breakchance = .05 # Chance for a child to not be created. This creates a gap.
@@ -47,35 +55,46 @@ class Tree:
 	# Resets self.tree and runs generate() on it, generating a new tree
 	def startgeneration(self):
 		self.tree = Branch(0, self.startinglength, self.startingangle)
-		self.generate(self.tree)
+		self.generate(self.tree, 1)
 	
 	# Recursively generates a tree of branches
-	def generate(self, parentbranch = Branch):
+	def generate(self, parentbranch = Branch, segment = None):
 		parentlayer = parentbranch.layer
 		parentlength = parentbranch.vector.length()
-		parentangle = parentbranch.vector.angle_to(self.verticalvector)
-		
-		childlayer = parentlayer + 1
-		childbendangle = self.bendangle * ((1 - self.bendangledrop) ** (childlayer - 1)) # Calculate angle children should be distributed across.
+		parentangle = parentbranch.angle
 
-		for i in range(self.splits):
-			if random.random() < self.breakchance:
-				pass
-			else:
-				childlength = parentlength * (1 - self.lengthdrop) * (1 - random.uniform(-self.lengthvariance, self.lengthvariance))
-				if self.splits == 1:
-					childangle = 0
-				elif self.splits == 2:
-					childangle = ((i * 2) - 1) * childbendangle / 2
+		currentsegments = self.segments - (self.segmentcountdrop * parentlayer)
+		currentsegments = round(currentsegments + (((random.random() * 2) - 1) * self.segmentcountvariance))
+
+		if segment != None and segment < currentsegments-1:
+			childlayer = parentlayer
+			childlength = parentlength * (1 - self.segmentlengthdrop) * (1 - random.uniform(-self.segmentlengthvariance, self.segmentlengthvariance))
+			childangle = (parentangle - (parentangle * self.segmentupwardbend)) * (1 - random.uniform(-self.segmentanglevariance, self.segmentanglevariance))
+			childbranch = Branch(childlayer, childlength, childangle)
+			parentbranch.children.append(childbranch)
+			self.generate(childbranch, segment + 1)
+		else:		
+			childlayer = parentlayer + 1
+			childbendangle = self.bendangle * ((1 - self.bendangledrop) ** (childlayer - 1)) # Calculate angle children should be distributed across.
+
+			for i in range(self.splits):
+				if random.random() < self.breakchance:
+					pass
 				else:
-					childangle = ((i - ((self.splits - 1) / 2)) * (childbendangle / (self.splits - 1))) # Distribute branches
-				childangle -= parentangle * self.bendangleinheritance # Inherit parent angle
-				childangle *= 1 - random.uniform(-self.bendanglevariance, self.bendanglevariance) # Randomize angle
+					childlength = parentlength * (1 - self.lengthdrop) * (1 - random.uniform(-self.lengthvariance, self.lengthvariance))
+					if self.splits == 1:
+						childangle = 0
+					elif self.splits == 2:
+						childangle = ((i * 2) - 1) * childbendangle / 2
+					else:
+						childangle = ((i - ((self.splits - 1) / 2)) * (childbendangle / (self.splits - 1))) # Distribute branches
+					childangle += parentangle * self.bendangleinheritance # Inherit parent angle
+					childangle *= 1 - random.uniform(-self.bendanglevariance, self.bendanglevariance) # Randomize angle
 
-				childbranch = Branch(childlayer, childlength, childangle)
-				parentbranch.children.append(childbranch)
-				if childlayer < self.layers - 1 and random.random() > self.breakafterchance:
-					self.generate(childbranch)
+					childbranch = Branch(childlayer, childlength, childangle)
+					parentbranch.children.append(childbranch)
+					if childlayer < self.layers - 1 and random.random() > self.breakafterchance:
+						self.generate(childbranch, 0)
 	
 	# Runs self.drawbranch on self.tree
 	def draw(self, surface = pygame.surface, position = tuple, color = (255, 255, 255), angle = 0):
@@ -103,6 +122,13 @@ trees.append(regulartree)
 
 sparsefractaltree.layers = 5 # How many recursive layers should be produced
 sparsefractaltree.splits = 6 # How many new branches should come off each branch
+sparsefractaltree.segments = 1 # How many lines per layer
+sparsefractaltree.segmentcountvariance = 0 # How many segments above or below self.segments to swing randomly
+sparsefractaltree.segmentcountdrop = 0 # How much to reduce segment count each layer
+sparsefractaltree.segmentupwardbend = 0 # How much of the difference between parent angle and up the segment should turn
+sparsefractaltree.segmentanglevariance = 0 # How much the segment angle should be randomized
+sparsefractaltree.segmentlengthdrop = 0 # Multiplier to segment length compared to parent.
+sparsefractaltree.segmentlengthvariance = 0 # Modifies segment length randomly
 sparsefractaltree.startinglength = 250 # The length of the first line of the trunk
 sparsefractaltree.lengthdrop = .6 # Multiplier applied to parent length when determining child length. The length is multiplied by (1 - self.lengthdrop)
 sparsefractaltree.lengthvariance = 0 # Modifies child length randomly. The length is multiplied by (1 - random.uniform(-self.lengthvariance, self.lengthvariance))
@@ -116,6 +142,13 @@ sparsefractaltree.breakafterchance = 0 # Chance for a child to have no children 
 
 skinnytree.layers = 8 # How many recursive layers should be produced
 skinnytree.splits = 3 # How many new branches should come off each branch
+skinnytree.segments = 1 # How many lines per layer
+skinnytree.segmentcountvariance = 0 # How many segments above or below self.segments to swing randomly
+skinnytree.segmentcountdrop = 0 # How much to reduce segment count each layer
+skinnytree.segmentupwardbend = 0 # How much of the difference between parent angle and up the segment should turn
+skinnytree.segmentanglevariance = 0 # How much the segment angle should be randomized
+skinnytree.segmentlengthdrop = 0 # Multiplier to segment length compared to parent.
+skinnytree.segmentlengthvariance = 0 # Modifies segment length randomly
 skinnytree.startinglength = 100 # The length of the first line of the trunk
 skinnytree.lengthdrop = .3 # Multiplier applied to parent length when determining child length. The length is multiplied by (1 - self.lengthdrop)
 skinnytree.lengthvariance = .5 # Modifies child length randomly. The length is multiplied by (1 - random.uniform(-self.lengthvariance, self.lengthvariance))
@@ -129,6 +162,13 @@ skinnytree.breakafterchance = .02 # Chance for a child to have no children of it
 
 regulartree.layers = 7 # How many recursive layers should be produced
 regulartree.splits = 4 # How many new branches should come off each branch
+regulartree.segments = 1 # How many lines per layer
+regulartree.segmentcountvariance = 0 # How many segments above or below self.segments to swing randomly
+regulartree.segmentcountdrop = 0 # How much to reduce segment count each layer
+regulartree.segmentupwardbend = 0 # How much of the difference between parent angle and up the segment should turn
+regulartree.segmentanglevariance = 0 # How much the segment angle should be randomized
+regulartree.segmentlengthdrop = 0 # Multiplier to segment length compared to parent.
+regulartree.segmentlengthvariance = 0 # Modifies segment length randomly
 regulartree.startinglength = 100 # The length of the first line of the trunk
 regulartree.lengthdrop = .3 # Multiplier applied to parent length when determining child length. The length is multiplied by (1 - self.lengthdrop)
 regulartree.lengthvariance = 0 # Modifies child length randomly. The length is multiplied by (1 - random.uniform(-self.lengthvariance, self.lengthvariance))
