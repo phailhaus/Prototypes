@@ -110,11 +110,16 @@ class Tree:
 		pygame.draw.aaline(surface, branch.color, start_pos, end_pos)
 		for childbranch in branch.children:
 			self.drawbranch(childbranch, surface, end_pos, angle = angle)
+	
+	# Runs self.colorizebranch on self.tree
+	def colorize(self):
+		self.colorizebranch(self.tree)
 
-def colorize(branch = Branch):
-	branch.color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-	for childbranch in branch.children:
-		colorize(childbranch)
+	# Recursively set a random color for each branch
+	def colorizebranch(self, branch = Branch):
+		branch.color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+		for childbranch in branch.children:
+			self.colorizebranch(childbranch)
 
 trees = list()
 sparsefractaltree = Tree()
@@ -209,7 +214,7 @@ while running:
 					tree.startgeneration()
 			elif event.key == pygame.K_c:
 				for tree in trees:
-					colorize(tree.tree)
+					tree.colorize()
 
 	# Clear the screen
 	screen.fill((0, 0, 0))
