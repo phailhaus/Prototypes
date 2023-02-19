@@ -18,12 +18,13 @@ pygame.display.set_caption("Trees!")
 
 # Recursive data class that holds branch info and child branches
 class Branch:
-	def __init__(self, layer = int, length = float, angle = float):
+	def __init__(self, layer = int, length = float, angle = float, color = (255, 255, 255)):
 		self.layer = layer
 		self.vector = pygame.math.Vector2((0, length)).rotate(angle)
 		self.angle = angle
 		self.children = list()
 		self.windimpact = random.uniform(1, 1.5)
+		self.color = color 
 	
 # Generates and draws trees
 class Tree:
@@ -97,18 +98,23 @@ class Tree:
 						self.generate(childbranch, 0)
 	
 	# Runs self.drawbranch on self.tree
-	def draw(self, surface = pygame.surface, position = tuple, color = (255, 255, 255), angle = 0):
-		self.drawbranch(self.tree, surface, position, color, angle)
+	def draw(self, surface = pygame.surface, position = tuple, angle = 0):
+		self.drawbranch(self.tree, surface, position, angle)
 	
 	# Recursively draws the tree at the specified location. Bends it based on the provided angle to simulate wind. The Y coordinate is flipped when drawing.
-	def drawbranch(self, branch = Branch, surface = pygame.surface, position = tuple, color = (255, 255, 255), angle = 0):
+	def drawbranch(self, branch = Branch, surface = pygame.surface, position = tuple, angle = 0):
 		start_pos = pygame.math.Vector2(position)
 		reflectedbranchvector = pygame.math.Vector2((branch.vector.x, -branch.vector.y)) # Flip Y coordinate
 		reflectedbranchvector.rotate_ip(angle * ((branch.layer + 1.5) / 1.5) * branch.windimpact) # Apply wind
 		end_pos = start_pos + reflectedbranchvector
-		pygame.draw.aaline(surface, color, start_pos, end_pos)
+		pygame.draw.aaline(surface, branch.color, start_pos, end_pos)
 		for childbranch in branch.children:
-			self.drawbranch(childbranch, surface, end_pos, color, angle = angle)
+			self.drawbranch(childbranch, surface, end_pos, angle = angle)
+
+def colorize(branch = Branch):
+	branch.color = (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+	for childbranch in branch.children:
+		colorize(childbranch)
 
 trees = list()
 sparsefractaltree = Tree()
@@ -201,6 +207,9 @@ while running:
 			if event.key == pygame.K_SPACE:
 				for tree in trees:
 					tree.startgeneration()
+			elif event.key == pygame.K_c:
+				for tree in trees:
+					colorize(tree.tree)
 
 	# Clear the screen
 	screen.fill((0, 0, 0))
