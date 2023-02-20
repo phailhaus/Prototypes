@@ -18,13 +18,18 @@ pygame.display.set_caption("Trees!")
 
 # Recursive data class that holds branch info and child branches
 class Branch:
-	def __init__(self, layer = int, length = float, angle = float, color = (255, 255, 255)):
+	def __init__(self, layer = int, length = float, angle = float, parent = None, color = (255, 255, 255)):
 		self.layer = layer
 		self.vector = pygame.math.Vector2((0, length)).rotate(angle)
 		self.angle = angle
+		self.parent = parent
 		self.children = list()
 		self.windimpact = random.uniform(1, 1.5)
-		self.color = color 
+		self.color = color
+		if parent != None:
+			self.localposition = pygame.math.Vector2(self.parent.localposition.x + self.vector.x, self.parent.localposition.y + self.vector.y)
+		else:
+			self.localposition = pygame.math.Vector2(self.vector)
 	
 # Generates and draws trees
 class Tree:
@@ -49,13 +54,18 @@ class Tree:
 		self.breakchance = .05 # Chance for a child to not be created. This creates a gap.
 		self.breakafterchance = .02 # Chance for a child to have no children of its own. This creates a stub.
 		
+		self.lowerbound = pygame.math.Vector2(0, 0)
+		self.upperbound = pygame.math.Vector2(0, 0)
+		self.size = pygame.math.Vector2(0, 0)
+		
 		self.tree = Branch(0, self.startinglength, self.startingangle)
-		self.verticalvector = pygame.math.Vector2((0, 1))
-		self.horizontalvector = pygame.math.Vector2((1, 0))
+		self.verticalvector = pygame.math.Vector2(0, 1)
+		self.horizontalvector = pygame.math.Vector2(1, 0)
 	
 	# Resets self.tree and runs generate() on it, generating a new tree
 	def startgeneration(self):
 		self.tree = Branch(0, self.startinglength, self.startingangle)
+		self.updatebounds(self.tree)
 		self.generate(self.tree, 1)
 	
 	# Recursively generates a tree of branches
@@ -71,8 +81,9 @@ class Tree:
 			childlayer = parentlayer
 			childlength = parentlength * (1 - self.segmentlengthdrop) * (1 - random.uniform(-self.segmentlengthvariance, self.segmentlengthvariance))
 			childangle = (parentangle - (parentangle * self.segmentupwardbend)) * (1 - random.uniform(-self.segmentanglevariance, self.segmentanglevariance))
-			childbranch = Branch(childlayer, childlength, childangle)
+			childbranch = Branch(childlayer, childlength, childangle, parentbranch)
 			parentbranch.children.append(childbranch)
+			self.updatebounds(childbranch)
 			self.generate(childbranch, segment + 1)
 		else:		
 			childlayer = parentlayer + 1
@@ -92,10 +103,23 @@ class Tree:
 					childangle += parentangle * self.bendangleinheritance # Inherit parent angle
 					childangle *= 1 - random.uniform(-self.bendanglevariance, self.bendanglevariance) # Randomize angle
 
-					childbranch = Branch(childlayer, childlength, childangle)
+					childbranch = Branch(childlayer, childlength, childangle, parentbranch)
 					parentbranch.children.append(childbranch)
+					self.updatebounds(childbranch)
 					if childlayer < self.layers - 1 and random.random() > self.breakafterchance:
 						self.generate(childbranch, 0)
+
+	# Change stored bounds if a branch goes outside of them	
+	def updatebounds(self, branch=Branch):
+		if branch.localposition.x < self.lowerbound.x:
+			self.lowerbound.x = branch.localposition.x
+		elif branch.localposition.x > self.upperbound.x:
+			self.upperbound.x = branch.localposition.x
+		if branch.localposition.y < self.lowerbound.y:
+			self.lowerbound.y = branch.localposition.y
+		elif branch.localposition.y > self.upperbound.y:
+			self.upperbound.y = branch.localposition.y
+		self.size = self.upperbound - self.lowerbound
 	
 	# Runs self.drawbranch on self.tree
 	def draw(self, surface = pygame.surface, position = tuple, velocity = pygame.math.Vector2(0,0)):
@@ -106,7 +130,10 @@ class Tree:
 		start_pos = pygame.math.Vector2(position)
 		branchvector = pygame.math.Vector2(branch.vector)
 		branchvectorlength = branchvector.length()
-		branchvector += velocity * branch.windimpact
+		velocityscalar = ((abs(branchvector.x)/self.size.x) + (abs(branchvector.y)/self.size.y))/2
+		velocityscalar *= branch.windimpact
+		velocityscaled = pygame.math.Vector2(velocity) * velocityscalar
+		branchvector += velocityscaled
 		branchvector.scale_to_length(branchvectorlength)
 		reflectedbranchvector = pygame.math.Vector2((branchvector.x, -branchvector.y)) # Flip Y coordinate
 		end_pos = start_pos + reflectedbranchvector
@@ -168,7 +195,7 @@ class PlayerTree:
 
 	def draw(self, screen):
 		global windvelocity
-		combined_vel = pygame.math.Vector2(-self.player_vel.x, self.player_vel.y)
+		combined_vel = pygame.math.Vector2(-self.player_vel.x, self.player_vel.y) * 5
 		combined_vel += windvelocity
 		combined_vel += self.combined_vel_last
 		combined_vel /= 2
@@ -252,7 +279,7 @@ player = PlayerTree(skinnytree, pygame.math.Vector2(screen_width/2, screen_heigh
 
 wind = 0
 targetwind = 0
-windmax = 25
+windmax = 300
 
 # Game loop
 running = True
