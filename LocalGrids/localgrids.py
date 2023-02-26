@@ -1,4 +1,5 @@
 import sys
+import math
 import pygame
 import pygame.gfxdraw
 from pygame.locals import *
@@ -49,7 +50,7 @@ def main():
 	innerobjectbody.angular_velocity = .5
 	innerobjectbody.velocity = pymunk.Vec2d(10, 25)
 	innerobjectbox = pymunk.Poly.create_box(innerobjectbody, (screenwidth * .25 * .25, screenheight * .25 * .25), radius=5)
-	innerobjectbox.elasticity = .5
+	innerobjectbox.elasticity = .1
 	innerobjectbox.density = 1
 
 	objectspace.add(innerobjectbody, innerobjectbox)
@@ -63,7 +64,7 @@ def main():
 		prestepvelocity = objectbody.velocity
 		mainspace.step(1/framerate)
 		poststepvelocity = objectbody.velocity
-		acceleration = ((poststepvelocity - prestepvelocity) * framerate) + mainspace.gravity.rotated(-objectbody.angle)
+		acceleration = ((poststepvelocity - prestepvelocity) * framerate).rotated(objectbody.angle + math.radians(180)) + mainspace.gravity.rotated(objectbody.angle)
 		objectspace.gravity = acceleration
 		objectspace.step(1/framerate)
 		screen.fill((0, 0, 0))
