@@ -67,35 +67,35 @@ def main():
 						elif event.key == K_d:
 							debugdraw = not debugdraw
 
-		innerobjectbody.prestepvelocity = objectbody.velocity_at_local_point(innerobjectbody.position)
-		innerobjectbody.prestepangvelocity = objectbody.angular_velocity
+		innerobjectbody.prestepvelocity = objectbody.velocity_at_local_point(innerobjectbody.position) # Record absolute velocity of the parent object at the location of the child object
+		innerobjectbody.prestepangvelocity = objectbody.angular_velocity # Record angular velocity of the parent object
 
 		keyspressed = pygame.key.get_pressed()
-		if keyspressed[K_UP] or keyspressed[K_KP8]: fire_engine(objectbody, (0,-1))
-		if keyspressed[K_DOWN] or keyspressed[K_KP5]: fire_engine(objectbody, (0,1))
-		if keyspressed[K_KP7]: fire_engine(objectbody, (-1, 0))
-		if keyspressed[K_KP9]: fire_engine(objectbody, (1, 0))
-		if keyspressed[K_LEFT] or keyspressed[K_KP4]: objectbody.angular_velocity -= .01
-		if keyspressed[K_RIGHT] or keyspressed[K_KP6]: objectbody.angular_velocity += .01
+		if keyspressed[K_UP] or keyspressed[K_KP8]: fire_engine(objectbody, (0,-1)) # Up
+		if keyspressed[K_DOWN] or keyspressed[K_KP5]: fire_engine(objectbody, (0,1)) # Down
+		if keyspressed[K_LEFT] or keyspressed[K_KP4]: fire_engine(objectbody, (-1, 0)) # Left
+		if keyspressed[K_RIGHT] or keyspressed[K_KP6]: fire_engine(objectbody, (1, 0)) # Right
+		if keyspressed[K_KP7]: objectbody.angular_velocity -= 1/framerate # Rotate counter-clockwise
+		if keyspressed[K_KP9]: objectbody.angular_velocity += 1/framerate # Rotate clockwise
 		
 		mainspace.step(1/framerate)
 
-		innerobjectbody.poststepvelocity = objectbody.velocity_at_local_point(innerobjectbody.position)
-		innerobjectbody.poststepangvelocity = objectbody.angular_velocity
+		innerobjectbody.poststepvelocity = objectbody.velocity_at_local_point(innerobjectbody.position) # Record absolute velocity again after the timestep so that acceleration can be computed
+		innerobjectbody.poststepangvelocity = objectbody.angular_velocity # Record angular velocity again so that angular acceleration can be computed
 		
-		acceleration = (innerobjectbody.poststepvelocity - innerobjectbody. prestepvelocity).rotated(-objectbody.angle + math.radians(180))
-		velocityadd = acceleration + (mainspace.gravity.rotated(-objectbody.angle)/framerate)
-		innerobjectbody.velocity += velocityadd
+		acceleration = (innerobjectbody.poststepvelocity - innerobjectbody. prestepvelocity).rotated(-objectbody.angle + math.radians(180)) # Calculate acceleration of the parent, rotate it by parent angle to translate it into child space, and flip it so that the child gets the opposite acceleration
+		velocityadd = acceleration + (mainspace.gravity.rotated(-objectbody.angle)/framerate) # Add gravity to the acceleration. If parent is in freefall, gravity on the parent and this gravity will cancel out, providing weightlessness.
+		innerobjectbody.velocity += velocityadd # Apply acceleration/gravity to child
 
-		angularacceleration = innerobjectbody.poststepangvelocity - innerobjectbody.prestepangvelocity
-		innerobjectbody.angular_velocity -= angularacceleration
+		angularacceleration = innerobjectbody.poststepangvelocity - innerobjectbody.prestepangvelocity # Calculate angular acceleration of the parent
+		innerobjectbody.angular_velocity -= angularacceleration # Subtract angular acceleration from the child
 
 
 		objectspace.step(1/framerate)
 		screen.fill((0, 0, 0))
 		pygame.gfxdraw.aapolygon(screen, environmentverts, (255, 255, 255)) # Draw Walls
-		drawPoly(screen, objectbox, (255, 255, 255), pymunk.Vec2d(0,0), 0)
-		drawPoly(screen, innerobjectbox, (255, 255, 255), objectbox.body.local_to_world(objectbox.get_vertices()[3]), objectbox.body.angle)
+		drawPoly(screen, objectbox, (255, 255, 255), pymunk.Vec2d(0,0), 0) # Draw parent box
+		drawPoly(screen, innerobjectbox, (255, 255, 255), objectbox.body.local_to_world(objectbox.get_vertices()[3]), objectbox.body.angle) # Draw child box. Gets corner of parent box and angle of parent box to offset child box to draw it inside the parent
 
 		if debugdraw:
 			debugpos = innerobjectbox.body.position.rotated(objectbox.body.angle) + objectbox.body.local_to_world(objectbox.get_vertices()[3])
@@ -108,7 +108,7 @@ def main():
 		pygame.display.flip()
 
 		clock.tick(framerate)
-		print(clock.get_fps())
+		#print(clock.get_fps())
 
 def fire_engine(objectbody, direction=(0,-1), force=None):
 		if force==None:
