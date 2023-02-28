@@ -27,6 +27,7 @@ def main():
 	environmentverts, environmentsegments = genWalls(environmentbody, screenwidth, screenheight)
 	mainspace.add(environmentbody)
 	for segment in environmentsegments:
+		segment.friction = 1
 		mainspace.add(segment)
 
 	objectbody = pymunk.Body(body_type = pymunk.Body.DYNAMIC)
@@ -35,6 +36,7 @@ def main():
 	objectbody.velocity = pymunk.Vec2d(40, 100)
 	objectbox = pymunk.Poly.create_box(objectbody, (screenwidth * .25, screenheight * .25), radius=5)
 	objectbox.elasticity = .1
+	objectbox.friction = 1
 	objectbox.density = 1
 
 	mainspace.add(objectbody, objectbox)
@@ -45,6 +47,7 @@ def main():
 	objectenvironmentverts, objectenvironmentsegments = genWalls(objectenvironmentbody, screenwidth * .25, screenheight * .25)
 	objectspace.add(objectenvironmentbody)
 	for segment in objectenvironmentsegments:
+		segment.friction = 1
 		objectspace.add(segment)
 	
 	innerobjectbody = pymunk.Body(body_type = pymunk.Body.DYNAMIC)
@@ -53,6 +56,7 @@ def main():
 	innerobjectbody.velocity = pymunk.Vec2d(10, 25)
 	innerobjectbox = pymunk.Poly.create_box(innerobjectbody, (screenwidth * .25 * .25, screenheight * .25 * .25), radius=5)
 	innerobjectbox.elasticity = .1
+	innerobjectbox.friction = 1
 	innerobjectbox.density = 1
 
 	objectspace.add(innerobjectbody, innerobjectbox)
