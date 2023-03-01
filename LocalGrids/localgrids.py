@@ -44,14 +44,14 @@ def main():
 	objectspace = pymunk.Space()
 	objectspace.gravity = (0.0, 0.0)
 	objectenvironmentbody = pymunk.Body(body_type = pymunk.Body.STATIC)
-	objectenvironmentverts, objectenvironmentsegments = genWalls(objectenvironmentbody, screenwidth * .25, screenheight * .25)
+	objectenvironmentverts, objectenvironmentsegments = genWalls(objectenvironmentbody, screenwidth * .25, screenheight * .25, centered=True)
 	objectspace.add(objectenvironmentbody)
 	for segment in objectenvironmentsegments:
 		segment.friction = 1
 		objectspace.add(segment)
 	
 	innerobjectbody = pymunk.Body(body_type = pymunk.Body.DYNAMIC)
-	innerobjectbody.position = pymunk.Vec2d(screenwidth * .125, screenheight * .125)
+	innerobjectbody.position = pymunk.Vec2d(0, 0)
 	innerobjectbody.angular_velocity = .5
 	innerobjectbody.velocity = pymunk.Vec2d(10, 25)
 	innerobjectbox = pymunk.Poly.create_box(innerobjectbody, (screenwidth * .25 * .25, screenheight * .25 * .25), radius=5)
@@ -99,15 +99,18 @@ def main():
 		screen.fill((0, 0, 0))
 		pygame.gfxdraw.aapolygon(screen, environmentverts, (255, 255, 255)) # Draw Walls
 		drawPoly(screen, objectbox, (255, 255, 255), pymunk.Vec2d(0,0), 0) # Draw parent box
-		drawPoly(screen, innerobjectbox, (255, 255, 255), objectbox.body.local_to_world(objectbox.get_vertices()[3]), objectbox.body.angle) # Draw child box. Gets corner of parent box and angle of parent box to offset child box to draw it inside the parent
+		drawPoly(screen, innerobjectbox, (255, 255, 255), objectbox.body.position, objectbox.body.angle) # Draw child box. Gets corner of parent box and angle of parent box to offset child box to draw it inside the parent
 
 		if debugdraw:
-			debugpos = innerobjectbox.body.position.rotated(objectbox.body.angle) + objectbox.body.local_to_world(objectbox.get_vertices()[3])
+			debugpos = innerobjectbox.body.position.rotated(objectbox.body.angle) + objectbox.body.position
 			debugposx, debugposy = debugpos
 			debugaccelposx, debugaccelposy = debugpos + acceleration.rotated(objectbox.body.angle) * 10
 			debugveladdposx, debugveladdposy = debugpos + velocityadd.rotated(objectbox.body.angle) * 10
 			pygame.draw.aaline(screen, (255, 0, 0), (debugposx, debugposy), (debugaccelposx, debugaccelposy))
 			pygame.draw.aaline(screen, (0, 255, 0), (debugposx, debugposy), (debugveladdposx, debugveladdposy))
+
+			centerx, centery = objectbox.body.position
+			pygame.gfxdraw.pixel(screen, int(centerx), int(centery), (255, 255, 0))
 
 		pygame.display.flip()
 
@@ -130,13 +133,19 @@ def drawPoly(screen=pygame.display, poly = pymunk.Poly, color = tuple, position 
 		verts.append((x, y))
 	pygame.gfxdraw.aapolygon(screen, verts, color)
 
-def genWalls(body, width, height):
+def genWalls(body, width, height, centered = False):
 	verts = list()
 	segs = list()
-	verts.append((0, 0))
-	verts.append((width-1, 0))
-	verts.append((width-1, height-1))
-	verts.append((0, height-1))
+	if not centered:
+		verts.append((0, 0))
+		verts.append((width-1, 0))
+		verts.append((width-1, height-1))
+		verts.append((0, height-1))
+	elif centered:
+		verts.append((-width/2, -height/2))
+		verts.append((width/2, -height/2))
+		verts.append((width/2, height/2))
+		verts.append((-width/2, height/2))
 	for i in range(4):
 		if i < 3:
 			firstvert = verts[i]
