@@ -32,14 +32,14 @@ def main():
 							sys.exit(0)
 
 		keyspressed = pygame.key.get_pressed()
-		if keyspressed[K_UP] or keyspressed[K_KP8]: camera.move(y = -1) # Up
-		if keyspressed[K_DOWN] or keyspressed[K_KP5]: camera.move(y = 1) # Down
-		if keyspressed[K_LEFT] or keyspressed[K_KP4]: camera.move(x = -1) # Left
-		if keyspressed[K_RIGHT] or keyspressed[K_KP6]: camera.move(x = 1) # Right
-		if keyspressed[K_KP7]: camera.rotate(-30/framerate) # Rotate counter-clockwise
-		if keyspressed[K_KP9]: camera.rotate(30/framerate) # Rotate clockwise
-		if keyspressed[K_KP_PLUS]: camera.zoom(.1/framerate) # Zoom in
-		if keyspressed[K_KP_MINUS]: camera.zoom(-.1/framerate) # Zoom out
+		if keyspressed[K_UP] or keyspressed[K_KP8]: camera.move(y = -5) # Up
+		if keyspressed[K_DOWN] or keyspressed[K_KP5]: camera.move(y = 5) # Down
+		if keyspressed[K_LEFT] or keyspressed[K_KP4]: camera.move(x = -5) # Left
+		if keyspressed[K_RIGHT] or keyspressed[K_KP6]: camera.move(x = 5) # Right
+		if keyspressed[K_KP7]: camera.rotate(-60/framerate) # Rotate counter-clockwise
+		if keyspressed[K_KP9]: camera.rotate(60/framerate) # Rotate clockwise
+		if keyspressed[K_KP_PLUS]: camera.zoom(.2/framerate) # Zoom in
+		if keyspressed[K_KP_MINUS]: camera.zoom(-.2/framerate) # Zoom out
 
 		screen.fill((0, 0, 0))
 
