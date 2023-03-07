@@ -7,7 +7,7 @@ import pymunk
 import pymunk.pygame_util
 
 from localgrids import Localgrid
-from cameraTransform import cameraTransform
+import cameraTransform
 
 pygame.init()
 
@@ -21,10 +21,7 @@ framerate = 60
 
 def main():
 	screen = pygame.display.set_mode(screensize)
-
-	cameraposition = pygame.Vector2(0, 0)
-	camerarotation = 0
-	camerascale = 1
+	camera = cameraTransform.Camera()
 
 	while True:
 		for event in pygame.event.get():
@@ -35,14 +32,14 @@ def main():
 							sys.exit(0)
 
 		keyspressed = pygame.key.get_pressed()
-		if keyspressed[K_UP] or keyspressed[K_KP8]: cameraposition -= pygame.Vector2(0, 1).rotate(-camerarotation * 360) # Up
-		if keyspressed[K_DOWN] or keyspressed[K_KP5]: cameraposition += pygame.Vector2(0, 1).rotate(-camerarotation * 360) # Down
-		if keyspressed[K_LEFT] or keyspressed[K_KP4]: cameraposition -= pygame.Vector2(1, 0).rotate(-camerarotation * 360) # Left
-		if keyspressed[K_RIGHT] or keyspressed[K_KP6]: cameraposition += pygame.Vector2(1, 0).rotate(-camerarotation * 360) # Right
-		if keyspressed[K_KP7]: camerarotation -= .1/framerate # Rotate counter-clockwise
-		if keyspressed[K_KP9]: camerarotation += .1/framerate # Rotate clockwise
-		if keyspressed[K_KP_PLUS]: camerascale += .1/framerate # Zoom in
-		if keyspressed[K_KP_MINUS]: camerascale -= .1/framerate # Zoom out
+		if keyspressed[K_UP] or keyspressed[K_KP8]: camera.move(y = -1) # Up
+		if keyspressed[K_DOWN] or keyspressed[K_KP5]: camera.move(y = 1) # Down
+		if keyspressed[K_LEFT] or keyspressed[K_KP4]: camera.move(x = -1) # Left
+		if keyspressed[K_RIGHT] or keyspressed[K_KP6]: camera.move(x = 1) # Right
+		if keyspressed[K_KP7]: camera.rotate(-30/framerate) # Rotate counter-clockwise
+		if keyspressed[K_KP9]: camera.rotate(30/framerate) # Rotate clockwise
+		if keyspressed[K_KP_PLUS]: camera.zoom(.1/framerate) # Zoom in
+		if keyspressed[K_KP_MINUS]: camera.zoom(-.1/framerate) # Zoom out
 
 		screen.fill((0, 0, 0))
 
@@ -52,7 +49,7 @@ def main():
 		for i in range(6):
 			y = (i * 50) + 50
 			for x in (50, 200):
-				squigglepoints.append(cameraTransform(screen, (x, y), cameraposition, camerarotation, camerascale))
+				squigglepoints.append(camera.transformCoord(screen, (x, y)))
 			
 		pygame.draw.aalines(screen, (255,255,255), False, squigglepoints)
 
