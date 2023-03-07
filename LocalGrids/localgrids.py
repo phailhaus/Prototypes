@@ -167,6 +167,9 @@ def main():
 		if keyspressed[K_RIGHT] or keyspressed[K_KP6]: fire_engine(objectbody, (1, 0)) # Right
 		if keyspressed[K_KP7]: objectbody.angular_velocity -= 1/framerate # Rotate counter-clockwise
 		if keyspressed[K_KP9]: objectbody.angular_velocity += 1/framerate # Rotate clockwise
+
+		if keyspressed[K_KP_PLUS]: camera.zoom(.2/framerate) # Zoom in
+		if keyspressed[K_KP_MINUS]: camera.zoom(-.2/framerate) # Zoom out
 		if keyspressed[K_z]: # Increase smoothing
 			smoothingFactor -= .1 / framerate
 			if smoothingFactor < 0:
