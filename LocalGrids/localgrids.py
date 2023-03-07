@@ -6,6 +6,8 @@ from pygame.locals import *
 import pymunk
 import pymunk.pygame_util
 
+import cameraTransform
+
 pygame.init()
 
 clock = pygame.time.Clock()
@@ -64,24 +66,34 @@ class Localgrid:
 	def step(self, dt):
 		self.space.step(dt)
 	
-	def draw(self, screen):
+	def draw(self, screen, camera = None):
 		for shape in self.shapes:
 			if not shape.hidden:
-				drawShape(screen, shape, shape.color, self.parentbody.position, self.parentbody.angle)
+				if camera == None:
+					drawShape(screen, shape, shape.color, self.parentbody.position, self.parentbody.angle)
+				else:
+					drawShape(screen, shape, shape.color, self.parentbody.position, self.parentbody.angle, camera = camera)
 	
-	def debugdraw(self, screen):
+	def debugdraw(self, screen, camera = None):
 		for body in self.bodies:
 			if body.body_type == pymunk.Body.DYNAMIC:
 				debugpos = body.position.rotated(self.parentbody.angle) + self.parentbody.position
 				debugposx, debugposy = debugpos
 				debugaccelposx, debugaccelposy = debugpos + body.acceleration.rotated(self.parentbody.angle) * 10
 				debugveladdposx, debugveladdposy = debugpos + body.velocityadd.rotated(self.parentbody.angle) * 10
-				pygame.draw.aaline(screen, (255, 0, 0), (debugposx, debugposy), (debugaccelposx, debugaccelposy))
-				pygame.draw.aaline(screen, (0, 255, 0), (debugposx, debugposy), (debugveladdposx, debugveladdposy))
+				if camera == None:
+					pygame.draw.aaline(screen, (255, 0, 0), (debugposx, debugposy), (debugaccelposx, debugaccelposy))
+					pygame.draw.aaline(screen, (0, 255, 0), (debugposx, debugposy), (debugveladdposx, debugveladdposy))
+				else:
+					pygame.draw.aaline(screen, (255, 0, 0), camera.transformCoord(screen, (debugposx, debugposy)), camera.transformCoord(screen, (debugaccelposx, debugaccelposy)))
+					pygame.draw.aaline(screen, (0, 255, 0), camera.transformCoord(screen, (debugposx, debugposy)), camera.transformCoord(screen, (debugveladdposx, debugveladdposy)))
 				
 
 def main():
 	debugdraw = False
+	movingcamera = False
+	smoothingFactor = .33
+	camera = cameraTransform.Camera(position = (screenwidth / 2, screenheight / 2))
 
 	screen = pygame.display.set_mode(screensize)
 	mainspace = pymunk.Space()
@@ -143,8 +155,8 @@ def main():
 					elif event.type == KEYDOWN:
 						if event.key == K_ESCAPE:
 							sys.exit(0)
-						elif event.key == K_d:
-							debugdraw = not debugdraw
+						elif event.key == K_d: debugdraw = not debugdraw
+						elif event.key == K_c: movingcamera = not movingcamera
 
 		objectbody.localgrid.prestep()
 
@@ -155,20 +167,45 @@ def main():
 		if keyspressed[K_RIGHT] or keyspressed[K_KP6]: fire_engine(objectbody, (1, 0)) # Right
 		if keyspressed[K_KP7]: objectbody.angular_velocity -= 1/framerate # Rotate counter-clockwise
 		if keyspressed[K_KP9]: objectbody.angular_velocity += 1/framerate # Rotate clockwise
+		if keyspressed[K_z]: # Increase smoothing
+			smoothingFactor -= .1 / framerate
+			if smoothingFactor < 0:
+				smoothingFactor = 0
+			print(smoothingFactor)
+		if keyspressed[K_x]: # Reduce smoothing
+			smoothingFactor += .1 / framerate
+			if smoothingFactor > 1:
+				smoothingFactor = 1
+			print(smoothingFactor)
+
 		
 		mainspace.step(1/framerate)
+
+		camera.smooth(posTarget = (objectbody.position.x, objectbody.position.y), rotTarget = -objectbody.angle/math.tau, smoothingFactor = smoothingFactor)
 
 		objectbody.localgrid.poststep()
 
 		objectbody.localgrid.step(1/framerate)
 
 		screen.fill((0, 0, 0))
-		pygame.gfxdraw.aapolygon(screen, environmentverts, (255, 255, 255)) # Draw Walls
-		drawShape(screen, objectbox, (255, 255, 255), pymunk.Vec2d(0,0), 0) # Draw parent box
-		objectbody.localgrid.draw(screen)
+		if not movingcamera:
+			pygame.gfxdraw.aapolygon(screen, environmentverts, (255, 255, 255)) # Draw Walls
+			drawShape(screen, objectbox, (255, 255, 255), pymunk.Vec2d(0,0), 0) # Draw parent box
+			objectbody.localgrid.draw(screen)
 
-		if debugdraw:
-			objectbody.localgrid.debugdraw(screen)
+			if debugdraw:
+				objectbody.localgrid.debugdraw(screen)
+
+		elif movingcamera:
+			movingenvironmentverts = list()
+			for vert in environmentverts:
+				movingenvironmentverts.append(camera.transformCoord(screen, vert))
+			pygame.gfxdraw.aapolygon(screen, movingenvironmentverts, (255, 255, 255)) # Draw Walls
+			drawShape(screen, objectbox, (255, 255, 255), pymunk.Vec2d(0,0), 0, camera) # Draw parent box
+			objectbody.localgrid.draw(screen, camera = camera)
+
+			if debugdraw:
+				objectbody.localgrid.debugdraw(screen, camera = camera)
 
 		pygame.display.flip()
 
@@ -183,19 +220,26 @@ def fire_engine(objectbody, direction=(0,-1), force=None):
 			return
 		objectbody.apply_force_at_local_point((force * direction.x * objectbody.mass, force * direction.y * objectbody.mass))
 
-def drawShape(screen, shape, color, position, angle):
+def drawShape(screen, shape, color, position, angle, camera = None):
 	if type(shape) == pymunk.shapes.Poly:
 		verts = list()
 		for v in shape.get_vertices():
 			v = v.rotated(shape.body.angle) + shape.body.position
 			x,y = v.rotated(angle) + position
-			verts.append((x, y))
+			if camera == None:
+				verts.append((x, y))
+			else:
+				verts.append(camera.transformCoord(screen, (x, y)))
 		pygame.gfxdraw.aapolygon(screen, verts, color)
 	elif type(shape) == pymunk.shapes.Circle:
 		c = shape.offset.rotated(shape.body.angle) + shape.body.position
 		c = c.rotated(angle) + position
 		x, y = c
-		pygame.gfxdraw.aacircle(screen, int(x), int(y), int(shape.radius), color)
+		if camera == None:
+			pygame.gfxdraw.aacircle(screen, int(x), int(y), int(shape.radius), color)
+		else:
+			x, y = camera.transformCoord(screen, (x, y))
+			pygame.gfxdraw.aacircle(screen, int(x), int(y), int(shape.radius * camera.scale), color)
 
 def genWalls(body, width, height, centered = False):
 	verts = list()
