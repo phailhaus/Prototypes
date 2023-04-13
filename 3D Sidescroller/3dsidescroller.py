@@ -49,7 +49,6 @@ class WorldObject:
 		self.screenposition = self.object.position - cameraposition # Shift world so that camera is at zero
 		self.screenposition = self.screenposition.rotate(-cameraangle.as_polar()[1]) # Rotate world to camera angle
 		self.screenposition.y = -self.screenposition.y
-		return self.screenposition
 
 	def draw(self, surface, targetrect):
 		self.object.draw(surface, targetrect, self.screenposition)
@@ -60,6 +59,7 @@ class DebugTextObject:
 		self.color = color
 	
 	def draw(self, surface, targetrect, screenposition):
+		# Map
 		xsurface, xrect = defaultFont.render(f"X: {screenposition.x:.2f}", self.color, None)
 		xrect.midbottom = self.position * 8
 		xrect.y -= 5
@@ -69,8 +69,19 @@ class DebugTextObject:
 		yrect.y += 5
 		surface.blit(ysurface, yrect)
 		pygame.draw.circle(surface, self.color, self.position * 8, 3)
+		
+		# Camera
+		if -50 < screenposition.x < 50 and -10 < screenposition.y:
+			distancescalar = screenposition.y / (worldsize / 2) # Make distance value proportional to half of map size
+			viewwidth = distancescalar * 40 # Make the width 0-40 instead of 0-1
+			viewwidth += 10 # Make the width 10-50
 
-
+			renderpositionx = screenposition.x / viewwidth # Gives a centered scalar of screen position based on depth			
+			renderpositionx *= 400 # Make it -400-+400
+			renderpositionx += 1200 # Make it 800-1600
+			if 800 < renderpositionx < 1600:
+				pygame.draw.circle(surface, self.color, (renderpositionx, 400 + (distancescalar * 20)), (20 * (1-distancescalar)) + 20)
+				
 
 player = Player()
 player.position = Vector2((50, 50))
@@ -78,14 +89,14 @@ player.position = Vector2((50, 50))
 
 worldObjectList = list()
 
-redText = DebugTextObject((25,25), (255, 0, 0))
-redTextWorld = WorldObject(redText)
-worldObjectList.append(redTextWorld)
+for i in range(10):
+	worldObjectList.append(WorldObject(DebugTextObject((i * 8 + 10, 15), (255, 25 * i, 0))))
+	worldObjectList.append(WorldObject(DebugTextObject((i * 8 + 10, 20), (0, 255, 25 * i))))
 
-greenText = DebugTextObject((75,25), (0, 255, 0))
-greenTextWorld = WorldObject(greenText)
-worldObjectList.append(greenTextWorld)
-
+for i in range(100):
+	randx = (random.random() * 90)
+	randy = (random.random() * 40) + 50
+	worldObjectList.append(WorldObject(DebugTextObject((randx, randy), (127 + (random.random() * 128), 127 + (random.random() * 128), 127 + (random.random() * 128)))))
 
 # Game loop
 running = True
@@ -106,28 +117,33 @@ while running:
 	if keyspressed[K_e]: player.rotate(1) # Rotate clockwise
 
 	# Update screen positions
+	sortedWorldObjectList = list()
 	for thing in worldObjectList:
 		thing.updateScreenPosition(player.position, player.angle)
+		sortedWorldObjectList.append((thing.screenposition.y, thing))
+
+	sortedWorldObjectList.sort(key=lambda tup: tup[0], reverse=True)
+
 
 	# Clear the screen
 	screen.fill((0, 0, 0))
 
 	# Top-down display
-	leftsurface = pygame.Surface((800, 800))
+	surface = pygame.Surface((screen_width, screen_height))
 	scaledposition = player.position * 8 # Scale from 100x100 space to screen size
 	lineoffset = Vector2(player.angle)
-	lineoffset.scale_to_length(-1000)
+	lineoffset.scale_to_length(-100)
 	lineredpoint = scaledposition + lineoffset
-	lineoffset.scale_to_length(-1000)
+	lineoffset.scale_to_length(-100)
 	linegreenpoint = scaledposition + lineoffset
-	pygame.draw.aaline(leftsurface, (255, 0, 0), scaledposition, lineredpoint)
-	pygame.draw.aaline(leftsurface, (0, 255, 0), scaledposition, linegreenpoint)
-	pygame.draw.circle(leftsurface, (255, 255, 255), scaledposition, 10)
-	for thing in worldObjectList:
-		thing.draw(leftsurface, None)
+	pygame.draw.aaline(surface, (255, 0, 0), scaledposition, lineredpoint)
+	pygame.draw.aaline(surface, (0, 255, 0), scaledposition, linegreenpoint)
+	pygame.draw.circle(surface, (255, 255, 255), scaledposition, 10)
+	for thingtuple in sortedWorldObjectList:
+		thingtuple[1].draw(surface, None)
 
 	# Draw surfaces
-	screen.blit(leftsurface, (0, 0))
+	screen.blit(surface, (0, 0))
 	pygame.draw.line(screen, (255, 255, 255), (800, 0), (800, 800), 2)
 
 	# Update the screen
