@@ -31,8 +31,8 @@ class Player:
 		self.position = Vector2((0, 0))
 		self.angle = Vector2((1, 0))
 	
-	def move(self, distance):
-		movementvector = Vector2(self.angle)
+	def move(self, distance, normal = False):
+		movementvector = self.angle.rotate(-90 * normal)
 		movementvector.scale_to_length(distance)
 		self.position = self.position + movementvector
 	
@@ -109,10 +109,19 @@ while running:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
 			running = False
+		if event.type == pygame.KEYDOWN and event.key == K_c: # Hide the mouse
+			pygame.mouse.set_visible(not pygame.mouse.get_visible())
+			pygame.event.set_grab(not pygame.event.get_grab())
 	
+	mousemovement = pygame.mouse.get_rel() # Get mouse movement in this frame
+	player.rotate(mousemovement[0] * .1)
+
+
 	keyspressed = pygame.key.get_pressed()
 	if keyspressed[K_a]: player.move(-.5) # Left
 	if keyspressed[K_d]: player.move(.5) # Right
+	if keyspressed[K_w]: player.move(.5, True) # Forward
+	if keyspressed[K_s]: player.move(-.5, True) # Back
 	if keyspressed[K_q]: player.rotate(-1) # Rotate counter-clockwise
 	if keyspressed[K_e]: player.rotate(1) # Rotate clockwise
 
@@ -134,10 +143,11 @@ while running:
 	lineoffset = Vector2(player.angle)
 	lineoffset.scale_to_length(-100)
 	lineredpoint = scaledposition + lineoffset
-	lineoffset.scale_to_length(-100)
-	linegreenpoint = scaledposition + lineoffset
+	linegreenpoint = scaledposition + lineoffset.rotate(180)
+	linewhitepoint = scaledposition + lineoffset.rotate(90)
 	pygame.draw.aaline(surface, (255, 0, 0), scaledposition, lineredpoint)
 	pygame.draw.aaline(surface, (0, 255, 0), scaledposition, linegreenpoint)
+	pygame.draw.aaline(surface, (255, 255, 255), scaledposition, linewhitepoint)
 	pygame.draw.circle(surface, (255, 255, 255), scaledposition, 10)
 	for thingtuple in sortedWorldObjectList:
 		thingtuple[1].draw(surface, None)
