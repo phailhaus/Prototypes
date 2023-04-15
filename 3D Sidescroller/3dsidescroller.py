@@ -3,7 +3,6 @@ from pygame.math import Vector2
 from pygame.locals import *
 import pygame.freetype
 import random
-import inspect
 
 # Initialize Pygame
 pygame.init()
@@ -58,6 +57,7 @@ class DebugTextObject:
 	def __init__(self, position, color):
 		self.position = Vector2(position)
 		self.color = color
+		self.description = 'ball'
 	
 	def draw(self, surface, targetrect, screenposition):
 		# Map
@@ -88,6 +88,7 @@ class DebugProjectileObject:
 		self.position = Vector2(position)
 		self.color = color
 		self.angle = angle
+		self.description = 'projectile'
 	
 	def draw(self, surface, targetrect, screenposition):
 		# Map
@@ -147,6 +148,8 @@ while running:
 		if event.type == pygame.KEYDOWN and event.key == K_c: # Hide the mouse
 			pygame.mouse.set_visible(not pygame.mouse.get_visible())
 			pygame.event.set_grab(not pygame.event.get_grab())
+		if event.type == pygame.KEYDOWN and event.key == K_SPACE:
+			worldObjectList.append(WorldObject(DebugProjectileObject(player.position, (128, 0, 0), player.angle)))
 	
 	mousemovement = pygame.mouse.get_rel() # Get mouse movement in this frame
 	player.rotate(mousemovement[0] * .1)
@@ -159,14 +162,23 @@ while running:
 	if keyspressed[K_s]: player.move(-.5, True) # Back
 	if keyspressed[K_q]: player.rotate(-1) # Rotate counter-clockwise
 	if keyspressed[K_e]: player.rotate(1) # Rotate clockwise
-	if keyspressed[K_SPACE]:
-		worldObjectList.append(WorldObject(DebugProjectileObject(player.position, (128, 0, 0), player.angle)))
+
+	# Collide projectiles
+	for thing in worldObjectList:
+		if thing.object.description == 'projectile':
+			thing.object.move()
+			popProjectile = False
+			for otherthing in worldObjectList:
+				if otherthing.object.description == 'ball':
+					if thing.object.position.distance_to(otherthing.object.position) <= 2:
+						worldObjectList.pop(worldObjectList.index(otherthing))
+						popProjectile = True
+			if popProjectile:
+				worldObjectList.pop(worldObjectList.index(thing))
 
 	# Update screen positions
 	sortedWorldObjectList = list()
 	for thing in worldObjectList:
-		try: thing.object.move()
-		except: pass
 		thing.updateScreenPosition(player.position, player.angle)
 		sortedWorldObjectList.append((thing.screenposition.y, thing))
 
