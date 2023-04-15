@@ -3,6 +3,7 @@ from pygame.math import Vector2
 from pygame.locals import *
 import pygame.freetype
 import random
+import inspect
 
 # Initialize Pygame
 pygame.init()
@@ -81,6 +82,40 @@ class DebugTextObject:
 			renderpositionx += 1200 # Make it 800-1600
 			if 800 < renderpositionx < 1600:
 				pygame.draw.circle(surface, self.color, (renderpositionx, 400 + (distancescalar * 20)), (20 * (1-distancescalar)) + 20)
+
+class DebugProjectileObject:
+	def __init__(self, position, color, angle):
+		self.position = Vector2(position)
+		self.color = color
+		self.angle = angle
+	
+	def draw(self, surface, targetrect, screenposition):
+		# Map
+		xsurface, xrect = defaultFont.render(f"X: {screenposition.x:.2f}", self.color, None)
+		xrect.midbottom = self.position * 8
+		xrect.y -= 5
+		surface.blit(xsurface, xrect)
+		ysurface, yrect = defaultFont.render(f"Y: {screenposition.y:.2f}", self.color, None)
+		yrect.midtop = self.position * 8
+		yrect.y += 5
+		surface.blit(ysurface, yrect)
+		pygame.draw.circle(surface, self.color, self.position * 8, 3)
+		
+		# Camera
+		if -50 < screenposition.x < 50 and -10 < screenposition.y:
+			distancescalar = screenposition.y / (worldsize / 2) # Make distance value proportional to half of map size
+			viewwidth = distancescalar * 40 # Make the width 0-40 instead of 0-1
+			viewwidth += 10 # Make the width 10-50
+
+			renderpositionx = screenposition.x / viewwidth # Gives a centered scalar of screen position based on depth			
+			renderpositionx *= 400 # Make it -400-+400
+			renderpositionx += 1200 # Make it 800-1600
+			if 800 < renderpositionx < 1600:
+				pygame.draw.circle(surface, self.color, (renderpositionx, 400 + (distancescalar * 5)), (5 * (1-distancescalar)) + 5)
+	def move(self, distance = .5, normal = True):
+		movementvector = self.angle.rotate(-90 * normal)
+		movementvector.scale_to_length(distance)
+		self.position = self.position + movementvector
 				
 
 player = Player()
@@ -124,10 +159,14 @@ while running:
 	if keyspressed[K_s]: player.move(-.5, True) # Back
 	if keyspressed[K_q]: player.rotate(-1) # Rotate counter-clockwise
 	if keyspressed[K_e]: player.rotate(1) # Rotate clockwise
+	if keyspressed[K_SPACE]:
+		worldObjectList.append(WorldObject(DebugProjectileObject(player.position, (128, 0, 0), player.angle)))
 
 	# Update screen positions
 	sortedWorldObjectList = list()
 	for thing in worldObjectList:
+		try: thing.object.move()
+		except: pass
 		thing.updateScreenPosition(player.position, player.angle)
 		sortedWorldObjectList.append((thing.screenposition.y, thing))
 
