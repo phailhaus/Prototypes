@@ -87,7 +87,7 @@ class DebugProjectileObject:
 	def __init__(self, position, color, angle):
 		self.position = Vector2(position)
 		self.color = color
-		self.angle = angle
+		self.angle = Vector2(angle)
 		self.description = 'projectile'
 	
 	def draw(self, surface, targetrect, screenposition):
