@@ -36,7 +36,7 @@ c_light = (140, 140, 140)
 # Game loop
 running = True
 frame = 0
-board = chess.GenerateBoardList()
+chessgame = chess.Game()
 while running:
 	# Limit the framerate
 	clock.tick(framerate)
@@ -47,7 +47,7 @@ while running:
 			running = False
 		if (event.type == MOUSEBUTTONDOWN and event.button == 3) or (event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN):
 			clipboard = str(pygame.scrap.get(SCRAP_TEXT), 'UTF-8')
-			board = chess.FENreader(clipboard)
+			chessgame = chess.FENreader(clipboard)
 	
 	# Clear the screen
 	screen.fill(c_dark)
@@ -65,13 +65,13 @@ while running:
 	# Draw pieces
 	i = 0
 	while i < 64:
-		boardcell = board[i]
+		boardcell = chessgame.board[i]
 		if boardcell["piece"] is not None:
 			cellTupleCoords = chess.ToTupleCoord(i)
 			cellScreenX = cellTupleCoords[0] * cell_size
 			cellScreenY = (7 - cellTupleCoords[1]) * cell_size
 			
-			if boardcell["player"] == 0:
+			if boardcell["player"] == chess.c_playerwhite:
 				cellcolor = c_white
 			else:
 				cellcolor = c_black
