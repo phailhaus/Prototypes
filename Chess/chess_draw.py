@@ -43,18 +43,11 @@ while running:
 
 	# Handle events
 	for event in pygame.event.get():
-		if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+		if event.type == pygame.QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
 			running = False
-		if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-			#newFEN = input("Enter new board position in FEN format: ")
-			#board = chess.FENreader(newFEN)
-			
+		if (event.type == MOUSEBUTTONDOWN and event.button == 3) or (event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN):
 			clipboard = str(pygame.scrap.get(SCRAP_TEXT), 'UTF-8')
-			print(type(clipboard))
-			print(clipboard)
-
-			if type(clipboard) == str:
-				board = chess.FENreader(clipboard)
+			board = chess.FENreader(clipboard)
 	
 	# Clear the screen
 	screen.fill(c_dark)
