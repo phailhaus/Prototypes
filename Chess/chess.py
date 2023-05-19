@@ -21,15 +21,16 @@ class Game:
 		self.board = GenerateBoardList()
 		self.active_player = c_playerwhite
 		self.castling_available = ((True, True), (True, True)) # (White Kingside, White Queenside), (Black Kingside, Black Queenside)
+class BoardSpace:
+	def __init__(self):
+		self.player = None # 0: White, 1: Black
+		self.piece = None # Uses piece constants
 
 def GenerateBoardList():
 	out = list()
 	i = 0
 	while i < 64:
-		space = dict()
-		space["player"] = None # 0: White, 1: Black
-		space["piece"] = None # Uses piece constants
-		out.append(space)
+		out.append(BoardSpace())
 		i += 1
 	return out
 
@@ -89,8 +90,8 @@ def FENreader(FENstring): # Generates a board from an FEN string. Currently only
 				elif targetchar >= "a" and targetchar <= "z": # Lower case: Black
 					player = c_playerblack
 				boardpos = (rank * 8) + file
-				board[boardpos]["piece"] = piece
-				board[boardpos]["player"] = player
+				board[boardpos].piece = piece
+				board[boardpos].player = player
 				file += 1
 		i += 1
 	activeplayer_pos = FENstring.find(" ") + 1

@@ -66,17 +66,17 @@ while running:
 	i = 0
 	while i < 64:
 		boardcell = chessgame.board[i]
-		if boardcell["piece"] is not None:
+		if boardcell.piece is not None:
 			cellTupleCoords = chess.ToTupleCoord(i)
 			cellScreenX = cellTupleCoords[0] * cell_size
 			cellScreenY = (7 - cellTupleCoords[1]) * cell_size
 			
-			if boardcell["player"] == chess.c_playerwhite:
+			if boardcell.player == chess.c_playerwhite:
 				cellcolor = c_white
 			else:
 				cellcolor = c_black
 
-			charactertodraw = chess.pieceLetters[boardcell["piece"]]
+			charactertodraw = chess.pieceLetters[boardcell.piece]
 
 			charmetric = defaultFont.get_metrics(charactertodraw)[0][2]
 			if charmetric > 2 ** 31: # Check for unsigned int with rollover
