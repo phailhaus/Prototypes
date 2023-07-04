@@ -58,38 +58,24 @@ class perfAnnouncer:
 
 class Falloff_functions:
 	def none(value, distance, range):
-		if distance <= range:
-			return value
-		else:
-			return 0
+		return value
 
 	def linear(value, distance, range):
-		if distance <= range:
-			return (value / range) * (range - distance)
-		else:
-			return 0
+		return value * (1 - ((1/(range + 1)) * distance))
 
 	def linear_inv(value, distance, range):
-		if distance <= range:
-			return (value / range) * distance
-		else:
-			return 0
+		return value * ((1/(range + 1)) * (distance + 1))
 		
 	def cubic_hermine(value, distance, range):
-		if distance <= range:
-			distance_ratio = 1 - (distance / range)
-			falloff = distance_ratio * distance_ratio * (3 - 2 * distance_ratio)
-			return value * falloff
-		else:
-			return 0
+		distance_ratio = 1 - (distance / (range + 1))
+		falloff = distance_ratio * distance_ratio * (3 - 2 * distance_ratio)
+		return value * falloff
 
 	def quintic_hermite(value, distance, range):
-		if distance <= range:
-			distance_ratio = 1 - (distance / range)
-			falloff = distance_ratio * distance_ratio * distance_ratio * (distance_ratio * (distance_ratio * 6 - 15) + 10)
-			return value * falloff
-		else:
-			return 0
+		distance_ratio = 1 - (distance / (range + 1))
+		falloff = distance_ratio * distance_ratio * distance_ratio * (distance_ratio * (distance_ratio * 6 - 15) + 10)
+		return value * falloff
+
 
 class Emitter:
 	def __init__(self, parent_cell, radius, stat_name, power, multiplicative = False, falloff_function = Falloff_functions.none) -> None:
@@ -107,17 +93,22 @@ class Emitter:
 
 	def get_targets(self):
 		targets = list()
-		largest_x = self.radius
-		for y in range(self.radius):
-			y2 = y ** 2
-			for x in range(largest_x, 0, -1):
-				if (x ** 2) + y2 <= self.radius ** 2:
-					for x_draw in range(self.pos_x - x, self.pos_x + x):
-						targets.append(self.parent_cell.parent_grid.get_cell(x_draw, self.pos_y + y))
-						if y != 0:
-							targets.append(self.parent_cell.parent_grid.get_cell(x_draw, self.pos_y - y))
-					largest_x = x
-					break
+		radius = round(self.radius)
+		largest_x = radius
+		radius2 = (self.radius + .2) ** 2
+		if self.radius < 1:
+			targets.append(self.parent_cell)
+		else:
+			for y in range(radius + 1):
+				y2 = y ** 2
+				for x in range(largest_x, -1, -1):
+					if (x ** 2) + y2 <= radius2:
+						for x_draw in range(self.pos_x - x, self.pos_x + x + 1):
+							targets.append(self.parent_cell.parent_grid.get_cell(x_draw, self.pos_y + y))
+							if y != 0:
+								targets.append(self.parent_cell.parent_grid.get_cell(x_draw, self.pos_y - y))
+						largest_x = x
+						break
 		return targets
 
 	def distribute(self):
@@ -127,7 +118,10 @@ class Emitter:
 	
 	def apply(self, target_x, target_y):
 		distance = math.sqrt((target_x - self.pos_x)**2 + (target_y - self.pos_y)**2)
-		output_value = self.falloff_function(self.power, distance, self.radius)
+		if self.radius != 0:
+			output_value = self.falloff_function(self.power, distance, self.radius)
+		else:
+			output_value = self.power
 		if self.multiplicative:
 			output_value = output_value + 1
 		return self.multiplicative, self.stat_name, output_value
