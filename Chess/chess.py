@@ -21,6 +21,66 @@ class Game:
 		self.board = GenerateBoardList()
 		self.active_player = c_playerwhite
 		self.castling_available = ((True, True), (True, True)) # (White Kingside, White Queenside), (Black Kingside, Black Queenside)
+		self.legal_moves = list()
+	
+	def GenerateLegalMoves(self):
+		self.legal_moves = list()
+		king_locations = list((None, None))
+		king_potential_moves = (list(), list())
+		threatens_king_if_moved = (list(), list())
+		protects_king_if_blocked = (list(), list())
+
+		file=0 # King pass - Determine where the kings are and can move
+		while file < 8:
+			rank = 0
+			while rank < 8:
+				currentspacecoord = ToListCoord((file, rank))
+				currentspace = self.board[currentspacecoord]
+
+				if currentspace.piece == c_king:
+					king_locations[currentspace.player] = currentspacecoord
+					
+					fileoffset = -1
+					while fileoffset <= 1:
+						targetfile = file + fileoffset
+						rankoffset = -1
+						while rankoffset <= 1:
+							targetrank = rank + rankoffset
+							if 0 <= targetfile < 8 and 0 <= targetrank < 8: # Target space is on the board
+								targetcoord = ToListCoord((targetfile, targetrank))
+								targetspace = self.board[targetcoord]
+								if targetspace.player != currentspace.player: # Target space is empty or opposing
+									king_potential_moves[currentspace.player].append(targetcoord)
+							rankoffset += 1
+						fileoffset += 1
+
+				rank += 1
+			file += 1
+
+		file=0
+		while file < 8:
+			rank = 0
+			while rank < 8:
+				currentspacecoord = ToListCoord((file, rank))
+				currentspace = self.board[currentspacecoord]
+
+				if currentspace.piece == c_queen:
+					searchdepth = 0
+					while searchdepth < 2:
+						pass
+				elif currentspace.piece == c_rook:
+					pass
+				elif currentspace.piece == c_bishop:
+					pass
+				elif currentspace.piece == c_knight:
+					pass
+				elif currentspace.piece == c_pawn:
+					pass
+
+
+				rank += 1
+			file += 1
+
 class BoardSpace:
 	def __init__(self):
 		self.player = None # 0: White, 1: Black

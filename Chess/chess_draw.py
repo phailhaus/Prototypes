@@ -48,6 +48,7 @@ while running:
 		if (event.type == MOUSEBUTTONDOWN and event.button == 3) or (event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN):
 			clipboard = str(pygame.scrap.get(SCRAP_TEXT), 'UTF-8')
 			chessgame = chess.FENreader(clipboard)
+			chessgame.GenerateLegalMoves()
 	
 	# Clear the screen
 	screen.fill(c_dark)
@@ -65,11 +66,15 @@ while running:
 	# Draw pieces
 	i = 0
 	while i < 64:
+		cellTupleCoords = chess.ToTupleCoord(i)
+		cellScreenX = cellTupleCoords[0] * cell_size
+		cellScreenY = (7 - cellTupleCoords[1]) * cell_size
+		defaultFont.render_to(screen, (cellScreenX + (cell_size / 10), cellScreenY + (cell_size / 10)), str(i), fgcolor=c_white, size = font_size / 8)
+
 		boardcell = chessgame.board[i]
 		if boardcell.piece is not None:
-			cellTupleCoords = chess.ToTupleCoord(i)
-			cellScreenX = cellTupleCoords[0] * cell_size
-			cellScreenY = (7 - cellTupleCoords[1]) * cell_size
+			
+			
 			
 			if boardcell.player == chess.c_playerwhite:
 				cellcolor = c_white

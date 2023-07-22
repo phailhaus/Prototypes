@@ -88,7 +88,7 @@ def main():
 							emitter_radius += 1
 							change_radius(sim_grid, emitter_radius)
 						if event.key == pygame.K_DOWN:
-							if emitter_radius > 1:
+							if emitter_radius >= 1:
 								emitter_radius -= 1
 								change_radius(sim_grid, emitter_radius)
 
@@ -99,6 +99,10 @@ def main():
 
 		mainscreen.reset()
 		for gridcell in sim_grid.array_flat:
+			if len(gridcell.emitters) > 0:
+				drawchar = "."
+			else:
+				drawchar = blank
 			r, g, b = 0, 0, 0
 			stats = gridcell.stats
 			if len(stats) > 0:
@@ -108,8 +112,8 @@ def main():
 					g = min(stats["g"], 255)
 				if "b" in stats:
 					b = min(stats["b"], 255)
-			if max(r, g, b) > 0:
-				mainscreen.write_single(blank, (gridcell.pos_x, gridcell.pos_y), (r, g, b), (r, g, b))
+			if max(r, g, b) > 0 or drawchar != blank:
+				mainscreen.write_single(drawchar, (gridcell.pos_x, gridcell.pos_y), (255, 255, 255), (r, g, b))
 
 		pygameScreen.fill((0, 0, 0))
 		mainscreen.drawPygame(pygameScreen)
@@ -118,7 +122,7 @@ def main():
 
 		#time.sleep(1/framerate)
 		clock.tick(framerate)
-		print(clock.get_fps())
+		#print(clock.get_fps())
 		framenum += 1
 
 if __name__ == '__main__':
