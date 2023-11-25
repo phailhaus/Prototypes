@@ -14,7 +14,7 @@ pygame.init()
 defaultFont = pygame.freetype.Font(None, 12)
 
 # Set the dimensions of the screen
-screen_width = 1600
+screen_width = 1200
 screen_height = 800
 screen = pygame.display.set_mode((screen_width, screen_height))
 
@@ -26,7 +26,14 @@ render_distance = 600
 render_distance_squared = render_distance ** 2
 
 # Set Camera
-camera_fov = 80
+camera_fov = 40
+camera_fov_radians = (camera_fov * math.pi) / 180
+camera_vfov_radians = 2 * math.atan(math.tan(camera_fov_radians / 2) * (screen_width/screen_height))
+camera_distance = 10 # Camera distance behind the screen
+screen_width_world_coords = 2 * camera_distance * math.sin(camera_fov_radians/2)
+
+# Set default wall height
+wall_height = 100
 
 # Set % of screen height to drop per unit of distance
 perspective_drop_ratio = .001 # % of screen height to drop per unit of distance
@@ -66,24 +73,33 @@ class Player:
 			
 			render_progress = screen_x / (render_width - 1)
 			
-			camera_offset = self.camera_width * (render_progress - .5) # Creates base of frustum. First col is offset -self.camera_width / 2, last col + self.camera_width / 2
-			offset_vector = self.angle.rotate(90) # Rotate player angle vector to the side, returning a copy
-			offset_vector.scale_to_length(camera_offset) # Scale the vector to the number of units it needs to be offset
-			camera_position = self.position + offset_vector # Offset camera position from player position
+			#camera_offset = self.camera_width * (render_progress - .5) # Creates base of frustum. First col is offset -self.camera_width / 2, last col + self.camera_width / 2
+			#offset_vector = self.angle.rotate(90) # Rotate player angle vector to the side, returning a copy
+			#offset_vector.scale_to_length(camera_offset) # Scale the vector to the number of units it needs to be offset
+			#camera_position = self.position + offset_vector # Offset camera position from player position
 			
-			ray_angle = self.camera_fov * (render_progress - .5)
-			correction_factor = 1 # (((1/math.cos(math.radians(ray_angle))) - 1) * -5) + 1
-			camera_angle = self.angle.rotate(ray_angle) # Rotate player angle slightly based on render progress to make taper of frustum
-			camera_angle.scale_to_length(render_distance) # Scale to length of ray
+			#ray_angle = self.camera_fov * (render_progress - .5)
+			#correction_factor = 1 # (((1/math.cos(math.radians(ray_angle))) - 1) * -5) + 1
+			#camera_angle = self.angle.rotate(ray_angle) # Rotate player angle slightly based on render progress to make taper of frustum
+			#camera_angle.scale_to_length(render_distance) # Scale to length of ray
 
-			end_of_ray = camera_position + camera_angle
+			camera_offset = Vector2(self.angle)
+			camera_offset.scale_to_length(camera_distance)
+			camera_position = self.position - camera_offset
+			screen_offset = Vector2(self.angle).rotate(-90)
+			screen_offset.scale_to_length(screen_width_world_coords * -(render_progress - .5))
+			pixel_position = self.position + screen_offset
+			ray_vector = pixel_position - camera_position
+			ray_vector.scale_to_length(render_distance)
+
+			end_of_ray = pixel_position + ray_vector
 
 			if debugsurface != None:
-				pygame.draw.line(localdebugsurface, (255, 255, 255, abs(int(render_progress * 255)-127)), camera_position, camera_position + camera_angle)
+				pygame.draw.line(localdebugsurface, (255, 255, 255, abs(int(render_progress * 255)-127)), pixel_position, pixel_position + ray_vector)
 
 			
 			for wall in environment.walls:
-				x1, y1 = camera_position.xy
+				x1, y1 = pixel_position.xy
 				x2, y2 = end_of_ray.xy
 				x3, y3 = wall.start_point
 				x4, y4 = wall.end_point
@@ -121,9 +137,9 @@ class Player:
 					if screen_x == int(render_width / 2): print(f"Wall coord after rotate: {wall_position}")
 					distance = abs(wall_position.y) """
 					distance = math.sqrt(distance_squared)
-					distance *= correction_factor
-					lineshrink = (distance - perspective_unit_shift) * perspective_drop_ratio * render_height
-					line_length = min(max(render_height - lineshrink, 1), render_height)
+					# lineshrink = (distance - perspective_unit_shift) * perspective_drop_ratio * render_height
+					relative_height_radians = math.atan(wall_height/distance)
+					line_length = min(max(render_height * (relative_height_radians/camera_vfov_radians), 1), render_height)
 					line_offset = (render_height - line_length) / 2
 
 					pygame.gfxdraw.vline(surface, screen_x, 0, int(line_offset), drawn_wall.rooms[0].ceiling_color) # Draw Ceiling
