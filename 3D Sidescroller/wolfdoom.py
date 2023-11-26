@@ -25,19 +25,12 @@ map_render_width, map_render_height = 600, 300
 render_distance = 600
 render_distance_squared = render_distance ** 2
 
-# Set Camera
-camera_fov = 40
-camera_fov_radians = (camera_fov * math.pi) / 180
-camera_vfov_radians = 2 * math.atan(math.tan(camera_fov_radians / 2) * (screen_width/screen_height))
-camera_distance = 10 # Camera distance behind the screen
-screen_width_world_coords = 2 * camera_distance * math.sin(camera_fov_radians/2)
+# Set Default Camera
+camera_vfov_degrees = 54
+camera_distance = .5 # Camera distance behind the screen
 
 # Set default wall height
-wall_height = 100
-
-# Set % of screen height to drop per unit of distance
-perspective_drop_ratio = .001 # % of screen height to drop per unit of distance
-perspective_unit_shift = 30 # Shift wall scaling by this many units to allow walls to be taller than the screen when close to them
+wall_height = 3
 
 # Set up the clock object
 clock = pygame.time.Clock()
@@ -50,14 +43,31 @@ pygame.display.set_caption("Wolf3D!")
 class Player:
 	def __init__(self):
 		self.position = Vector2((0, 0))
+		self.vertical_position = 0
 		self.angle = Vector2((1, 0))
-		self.width = 10
-		self.camera_width = self.width - 8
-		self.camera_fov = camera_fov
+		self.width = 1
+		self.height = 2
+		self.movespeed_per_ms = .01
+		self.camera_vfov_degrees = camera_vfov_degrees
+		self.camera_distance = camera_distance
+		self.update_fov()
 	
-	def move(self, distance, normal = False):
+	def update_fov(self, vfov = None, distance = None):
+		if vfov != None:
+			self.camera_vfov_degrees = vfov
+		if distance != None:
+			self.camera_distance = distance
+		self.camera_vfov_radians = math.radians(self.camera_vfov_degrees)
+		self.camera_hfov_radians = 2 * math.atan(math.tan(self.camera_vfov_radians / 2) * (screen_width/screen_height))
+		self.camera_hfov_degrees = math.degrees(self.camera_hfov_radians)
+		self.camera_aperture_width = 2 * self.camera_distance * math.sin(self.camera_hfov_radians/2)
+	
+	def print_camera_stats(self):
+		print(f"VFOV: {self.camera_vfov_degrees}\nHFOV: {self.camera_hfov_degrees}\nDistance: {self.camera_distance}\nAperture Width: {self.camera_aperture_width}\n")
+	
+	def move(self, distance_scale, milliseconds, normal = False):
 		movementvector = self.angle.rotate(-90 * normal)
-		movementvector.scale_to_length(distance)
+		movementvector.scale_to_length(distance_scale * self.movespeed_per_ms * milliseconds)
 		self.position = self.position + movementvector
 	
 	def rotate(self, rotation):
@@ -72,22 +82,12 @@ class Player:
 			collisions = list()
 			
 			render_progress = screen_x / (render_width - 1)
-			
-			#camera_offset = self.camera_width * (render_progress - .5) # Creates base of frustum. First col is offset -self.camera_width / 2, last col + self.camera_width / 2
-			#offset_vector = self.angle.rotate(90) # Rotate player angle vector to the side, returning a copy
-			#offset_vector.scale_to_length(camera_offset) # Scale the vector to the number of units it needs to be offset
-			#camera_position = self.position + offset_vector # Offset camera position from player position
-			
-			#ray_angle = self.camera_fov * (render_progress - .5)
-			#correction_factor = 1 # (((1/math.cos(math.radians(ray_angle))) - 1) * -5) + 1
-			#camera_angle = self.angle.rotate(ray_angle) # Rotate player angle slightly based on render progress to make taper of frustum
-			#camera_angle.scale_to_length(render_distance) # Scale to length of ray
 
 			camera_offset = Vector2(self.angle)
-			camera_offset.scale_to_length(camera_distance)
+			camera_offset.scale_to_length(self.camera_distance)
 			camera_position = self.position - camera_offset
 			screen_offset = Vector2(self.angle).rotate(-90)
-			screen_offset.scale_to_length(screen_width_world_coords * -(render_progress - .5))
+			screen_offset.scale_to_length(self.camera_aperture_width * -(render_progress - .5))
 			pixel_position = self.position + screen_offset
 			ray_vector = pixel_position - camera_position
 			ray_vector.scale_to_length(render_distance)
@@ -129,20 +129,16 @@ class Player:
 				
 				while i >= 0: # Climb back up the collision list drawing the visible walls from furthest to nearest
 					distance_squared, drawn_wall, wall_position = collisions[i]
-					""" wall_position = Vector2(wall_position)
-					if screen_x == int(render_width / 2): print(f"Starting wall coord: {wall_position}")
-					wall_position = wall_position - self.position # Offset so that player/camera is at zero
-					if screen_x == int(render_width / 2): print(f"Wall coord after offset: {wall_position}")
-					wall_position.rotate_ip(self.angle.rotate(90).as_polar()[1]) # Rotate so that it is aligned with player/camera
-					if screen_x == int(render_width / 2): print(f"Wall coord after rotate: {wall_position}")
-					distance = abs(wall_position.y) """
 					distance = math.sqrt(distance_squared)
-					# lineshrink = (distance - perspective_unit_shift) * perspective_drop_ratio * render_height
-					relative_height_radians = math.atan(wall_height/distance)
-					line_length = min(max(render_height * (relative_height_radians/camera_vfov_radians), 1), render_height)
-					line_offset = (render_height - line_length) / 2
+					camera_height = self.vertical_position + self.height
+					angle_bottom = math.atan((camera_height - drawn_wall.bottom_pos) / distance)
+					angle_top = math.atan((drawn_wall.top_pos - camera_height) / distance)
+					ratio_bottom = angle_bottom / (self.camera_vfov_radians / 2)
+					ratio_top = angle_top / (self.camera_vfov_radians / 2)
+					line_length = max((render_height / 2) * (ratio_bottom + ratio_top), 1)
+					line_offset = (render_height / 2) * (1 - ratio_top)
 
-					pygame.gfxdraw.vline(surface, screen_x, 0, int(line_offset), drawn_wall.rooms[0].ceiling_color) # Draw Ceiling
+					pygame.gfxdraw.vline(surface, screen_x, 0, int(line_offset), drawn_wall.room.ceiling_color) # Draw Ceiling
 
 					if drawn_wall.color.a != 0: # Skip wall drawing if the wall is fully transparent
 						draw_color = drawn_wall.color.lerp((30, 30, 30), distance_squared / render_distance_squared) # Provide distance-based darkening to make surfaces easier to understand
@@ -155,51 +151,12 @@ class Player:
 							tempsurface.set_alpha(draw_color.a)
 							surface.blit(tempsurface, (screen_x, line_offset), special_flags = BLEND_ALPHA_SDL2)
 					
-					pygame.gfxdraw.vline(surface, screen_x, int(line_offset + line_length), int(render_height), drawn_wall.rooms[0].floor_color) # Draw Floor
+					pygame.gfxdraw.vline(surface, screen_x, int(line_offset + line_length), int(render_height), drawn_wall.room.floor_color) # Draw Floor
 
 					i -= 1
 
 		if debugsurface != None:
 			debugsurface.blit(localdebugsurface, (0,0))
-
-class Wall:
-	def __init__(self, room, color):
-		self.start_point = None
-		self.end_point = None
-		self.color = pygame.Color(color)
-		self.rooms = list()
-		self.rooms.append(room)
-		self.rooms[0].environment.walls.append(self)
-	
-	def place_abs(self, start_point, end_point):
-		self.start_point = start_point
-		self.end_point = end_point
-	
-	def draw_to_map(self, surface):
-		pygame.draw.aaline(surface, self.color, self.start_point, self.end_point)
-
-class Room:
-	def __init__(self, environment, floor_color, ceiling_color):
-		self.environment = environment
-		self.floor_color = floor_color
-		self.ceiling_color = ceiling_color
-		self.walls = list()
-	
-	def add_wall_existing(self, wall):
-		self.walls.append(wall)
-		wall.rooms.append(self)
-	
-	def add_wall_first(self, start_point, end_point, color):
-		self.walls.append(Wall(self, color))
-		self.walls[-1].place_abs(start_point, end_point)
-	
-	def add_wall_abs(self, end_point, color):
-		self.walls.append(Wall(self, color))
-		self.walls[-1].place_abs(self.walls[-2].end_point, end_point)
-	
-	def draw_to_map(self, surface):
-		for wall in self.walls:
-			wall.draw_to_map(surface)
 
 class Environment:
 	def __init__(self):
@@ -213,39 +170,81 @@ class Environment:
 		for room in self.rooms:
 			room.draw_to_map(surface)
 
-player = Player()
-player.position = Vector2((50, 50))
+class Room:
+	def __init__(self, environment: Environment, floor_color, ceiling_color):
+		self.environment = environment
+		self.floor_color = floor_color
+		self.ceiling_color = ceiling_color
+		self.walls = list()
+	
+	def add_wall_existing(self, wall):
+		self.walls.append(wall.copy(self))
+	
+	def add_wall_first(self, start_point, end_point, color):
+		self.walls.append(Wall(self, color, start_point, end_point))
+	
+	def add_wall_abs(self, end_point, color):
+		self.walls.append(Wall(self, color, self.walls[-1].end_point, end_point))
+	
+	def draw_to_map(self, surface):
+		for wall in self.walls:
+			wall.draw_to_map(surface)
 
+class Wall:
+	def __init__(self, room, color, start_point, end_point):
+		self.start_point = start_point
+		self.end_point = end_point
+		self.bottom_pos = 0
+		self.top_pos = wall_height
+		self.color = pygame.Color(color)
+		self.room = room
+		self.room.environment.walls.append(self)
+		self.other_side = None
+	
+	def copy(self, new_room):
+		new_wall = Wall(new_room, self.color, self.start_point, self.end_point)
+		self.other_side = new_wall
+		new_wall.other_side = self
+		return new_wall
+
+	
+	def draw_to_map(self, surface):
+		pygame.draw.aaline(surface, self.color, self.start_point, self.end_point)
+
+player = Player()
+player.position = Vector2((8, 8))
+
+test_env_scale = 1/12
 environment = Environment()
 environment.add_room(floor_color=(25, 25, 25), ceiling_color=(127, 127, 127))
-environment.rooms[0].add_wall_first((100, 4), (196, 76), (237, 28, 36))
-environment.rooms[0].add_wall_abs((159, 194), (255, 127, 39, 0))
-environment.rooms[0].add_wall_abs((41, 194), (255, 242, 0))
-environment.rooms[0].add_wall_abs((5, 76), (34, 177, 76))
-environment.rooms[0].add_wall_abs((100, 4), (0, 162, 232))
+environment.rooms[0].add_wall_first((100 * test_env_scale, 4 * test_env_scale), (196 * test_env_scale, 76 * test_env_scale), (237, 28, 36))
+environment.rooms[0].add_wall_abs((159 * test_env_scale, 194 * test_env_scale), (255, 127, 39, 0))
+environment.rooms[0].add_wall_abs((41 * test_env_scale, 194 * test_env_scale), (255, 242, 0))
+environment.rooms[0].add_wall_abs((5 * test_env_scale, 76 * test_env_scale), (34, 177, 76))
+environment.rooms[0].add_wall_abs((100 * test_env_scale, 4 * test_env_scale), (0, 162, 232))
 
 environment.add_room(floor_color=(25, 60, 25), ceiling_color=(127, 180, 127))
 environment.rooms[1].add_wall_existing(environment.rooms[0].walls[1])
-environment.rooms[1].add_wall_abs((425, 194), (255, 201, 14))
-environment.rooms[1].add_wall_abs((425, 77), (239, 228, 176, 127))
-environment.rooms[1].add_wall_abs((196, 76), (181, 230, 29))
+environment.rooms[1].add_wall_abs((425 * test_env_scale, 194 * test_env_scale), (255, 201, 14))
+environment.rooms[1].add_wall_abs((425 * test_env_scale, 77 * test_env_scale), (239, 228, 176, 127))
+environment.rooms[1].add_wall_abs((196 * test_env_scale, 76 * test_env_scale), (181, 230, 29))
 
 environment.add_room(floor_color=(60, 25, 25), ceiling_color=(180, 127, 127))
 environment.rooms[1].add_wall_existing(environment.rooms[1].walls[2])
-environment.rooms[1].add_wall_abs((425, 10), (163, 73, 164))
-environment.rooms[1].add_wall_abs((471, 57), (255, 242, 0))
-environment.rooms[1].add_wall_abs((512, 21), (34, 177, 76))
-environment.rooms[1].add_wall_abs((564, 98), (0, 162, 232))
-environment.rooms[1].add_wall_abs((588, 289), (153, 217, 234))
-environment.rooms[1].add_wall_abs((425, 277), (112, 146, 190))
-environment.rooms[1].add_wall_abs((425, 194), (200, 191, 231))
+environment.rooms[1].add_wall_abs((425 * test_env_scale, 10 * test_env_scale), (163, 73, 164))
+environment.rooms[1].add_wall_abs((471 * test_env_scale, 57 * test_env_scale), (255, 242, 0))
+environment.rooms[1].add_wall_abs((512 * test_env_scale, 21 * test_env_scale), (34, 177, 76))
+environment.rooms[1].add_wall_abs((564 * test_env_scale, 98 * test_env_scale), (0, 162, 232))
+environment.rooms[1].add_wall_abs((588 * test_env_scale, 289 * test_env_scale), (153, 217, 234))
+environment.rooms[1].add_wall_abs((425 * test_env_scale, 277 * test_env_scale), (112, 146, 190))
+environment.rooms[1].add_wall_abs((425 * test_env_scale, 194 * test_env_scale), (200, 191, 231))
 
 # Game loop
 running = True
 frame = 0
 while running:
 	# Limit the framerate
-	clock.tick(framerate)
+	frame_delta = clock.tick(framerate)
 
 	# Handle events
 	for event in pygame.event.get():
@@ -256,27 +255,27 @@ while running:
 				pygame.mouse.set_visible(not pygame.mouse.get_visible())
 				pygame.event.set_grab(not pygame.event.get_grab())
 			elif event.key == K_KP_9: # Debug FOV up
-				player.camera_fov += 10
-				print(player.camera_fov)
+				player.update_fov(vfov=player.camera_vfov_degrees + 1)
+				player.print_camera_stats()
 			elif event.key == K_KP_6: # Debug FOV down
-				player.camera_fov -= 10
-				print(player.camera_fov)
+				player.update_fov(vfov=player.camera_vfov_degrees - 1)
+				player.print_camera_stats()
 			elif event.key == K_KP_8: # Debug camera width up
-				player.camera_width += 1
-				print(player.camera_width)
+				player.update_fov(distance=player.camera_distance + .1)
+				player.print_camera_stats()
 			elif event.key == K_KP_5: # Debug camera width down
-				player.camera_width -= 1
-				print(player.camera_width)
+				player.update_fov(distance=player.camera_distance - .1)
+				player.print_camera_stats()
 	
 	mousemovement = pygame.mouse.get_rel() # Get mouse movement in this frame
 	player.rotate(mousemovement[0] * .15)
 
 
 	keyspressed = pygame.key.get_pressed()
-	if keyspressed[K_a]: player.move(3, True) # Left
-	if keyspressed[K_d]: player.move(-3, True) # Right
-	if keyspressed[K_w]: player.move(3) # Forward
-	if keyspressed[K_s]: player.move(-3) # Back
+	if keyspressed[K_a]: player.move(1, frame_delta, True) # Left
+	if keyspressed[K_d]: player.move(-1, frame_delta, True) # Right
+	if keyspressed[K_w]: player.move(1, frame_delta) # Forward
+	if keyspressed[K_s]: player.move(-1, frame_delta) # Back
 	if keyspressed[K_q]: player.rotate(-3) # Rotate counter-clockwise
 	if keyspressed[K_e]: player.rotate(3) # Rotate clockwise
 
