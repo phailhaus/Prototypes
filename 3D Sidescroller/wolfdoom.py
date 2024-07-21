@@ -93,10 +93,6 @@ class Player:
 			ray_vector.scale_to_length(render_distance)
 
 			end_of_ray = pixel_position + ray_vector
-
-			if debugsurface != None:
-				pygame.draw.line(localdebugsurface, (255, 255, 255, abs(int(render_progress * 255)-127)), pixel_position, pixel_position + ray_vector)
-
 			
 			for wall in environment.walls:
 				x1, y1 = pixel_position.xy
@@ -126,6 +122,8 @@ class Player:
 						i += 1
 					else:
 						found_solid = True
+						if debugsurface != None:
+							pygame.draw.line(localdebugsurface, (255, 255, 255, abs(int(render_progress * 255)-127)), pixel_position, collisions[i][2])
 				
 				while i >= 0: # Climb back up the collision list drawing the visible walls from furthest to nearest
 					distance_squared, drawn_wall, wall_position = collisions[i]
